@@ -1,7 +1,7 @@
 node_modules/
 .env
 *.local
-/reports/
-src/bot/bot-config.json
-src/bot/data/
+/reports/output/
+/bot/bot-config.json
+/bot/data/
 /data/

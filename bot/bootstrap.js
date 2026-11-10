@@ -1,6 +1,8 @@
+import path from 'node:path';
 import Anthropic from '@anthropic-ai/sdk';
-import { Bitrix24Client } from '../bitrix24/client.js';
-import { resolveWebhook } from '../utils/resolve-webhook.js';
+import { Bitrix24Client } from '../shared/bitrix24/client.js';
+import { resolveWebhook } from '../shared/utils/resolve-webhook.js';
+import { resolveDataDir } from '../shared/utils/data-dir.js';
 import { createApp } from './server.js';
 import { createAgentLoop } from './agent-loop.js';
 import { createClaudeCodeAdapter } from './claude-code-adapter.js';
@@ -21,6 +23,11 @@ import { createReportsPanel } from '../reports/reports-panel.js';
 
 const PORT = process.env.BOT_PORT || 3300;
 
+// Pasta dos dados persistentes — ver shared/utils/data-dir.js (DATA_DIR, depois
+// src/bot/data se existir, depois bot/data).
+const DATA_DIR = resolveDataDir();
+const dataPath = (...parts) => path.join(DATA_DIR, ...parts);
+
 const botConfig = loadBotConfig({ filePath: new URL('./bot-config.json', import.meta.url) });
 
 const bitrixClient = new Bitrix24Client(resolveWebhook());
@@ -31,10 +38,10 @@ const anthropic = process.env.BOT_MODEL_BACKEND === 'claude-code'
 const replyer = createReplyer({ client: bitrixClient, botId: botConfig.botId, botToken: botConfig.botToken });
 const { reply, notifyAction, replyWithFile } = replyer;
 const rateLimiter = createRateLimiter();
-const pendingActions = createPendingActionsStore({ filePath: new URL('./data/pending-actions.json', import.meta.url).pathname });
-const memory = createMemoryStore({ dataDir: new URL('./data', import.meta.url).pathname });
-const conversationHistory = createConversationHistory({ dataDir: new URL('./data', import.meta.url).pathname });
-const auditLog = createAuditLog(new URL('./data/audit.jsonl', import.meta.url).pathname);
+const pendingActions = createPendingActionsStore({ filePath: dataPath('pending-actions.json') });
+const memory = createMemoryStore({ dataDir: DATA_DIR });
+const conversationHistory = createConversationHistory({ dataDir: DATA_DIR });
+const auditLog = createAuditLog(dataPath('audit.jsonl'));
 const agentLoop = createAgentLoop({ anthropic, pendingActions, memory, auditLog, conversationHistory });
 
 const msntalkWebhookSecret = process.env.MSNTALK_WEBHOOK_SECRET;
@@ -45,11 +52,11 @@ if (!msntalkWebhookSecret) {
   );
 }
 const msntalkTicketUrlTemplate = process.env.MSNTALK_TICKET_URL_TEMPLATE;
-const msntalkThreadStore = createThreadStore({ filePath: new URL('./data/msntalk-threads.json', import.meta.url).pathname });
-const msntalkPendingStore = createPendingStore({ filePath: new URL('./data/msntalk-pending.json', import.meta.url).pathname });
+const msntalkThreadStore = createThreadStore({ filePath: dataPath('msntalk-threads.json') });
+const msntalkPendingStore = createPendingStore({ filePath: dataPath('msntalk-pending.json') });
 
 const msntalkAdditionalContactsIndex = createAdditionalContactsIndex({
-  filePath: new URL('./data/msntalk-additional-contacts.json', import.meta.url).pathname,
+  filePath: dataPath('msntalk-additional-contacts.json'),
 });
 // Cliente Bitrix dedicado a essa varredura em segundo plano — evita que
 // milhares de chamadas do refresh fiquem na frente das sincronizações em
@@ -130,8 +137,8 @@ const app = createApp({
 
 // Painel de relatórios com login (usuários em data/report-users.json; o primeiro acesso é
 // admin/admin com troca de senha obrigatória). Os relatórios são os .html gerados em REPORTS_DIR.
-const reportUserStore = createReportUserStore({ filePath: new URL('./data/report-users.json', import.meta.url).pathname });
-const reportsDir = process.env.REPORTS_DIR || new URL('./data/reports', import.meta.url).pathname;
+const reportUserStore = createReportUserStore({ filePath: dataPath('report-users.json') });
+const reportsDir = process.env.REPORTS_DIR || dataPath('reports');
 app.use('/reports', createReportsPanel({ userStore: reportUserStore, reportsDir }));
 
 app.listen(PORT, () => {

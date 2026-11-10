@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { Bitrix24Client } from '../bitrix24/client.js';
-import { resolveWebhook } from '../utils/resolve-webhook.js';
+import { Bitrix24Client } from '../shared/bitrix24/client.js';
+import { resolveWebhook } from '../shared/utils/resolve-webhook.js';
 import { buildDocument } from './document-generator.js';
 
 export const generateDocumentSchema = z.object({

@@ -1,6 +1,6 @@
 import { writeFileSync } from 'fs';
-import { Bitrix24Client } from '../bitrix24/client.js';
-import { resolveWebhook } from '../utils/resolve-webhook.js';
+import { Bitrix24Client } from '../shared/bitrix24/client.js';
+import { resolveWebhook } from '../shared/utils/resolve-webhook.js';
 
 const EVENT_HANDLER_URL = process.env.BOT_EVENT_HANDLER_URL;
 if (!EVENT_HANDLER_URL) {
@@ -38,5 +38,5 @@ const config = {
 };
 
 writeFileSync(new URL('./bot-config.json', import.meta.url), JSON.stringify(config, null, 2), { mode: 0o600 });
-console.log('Bot registrado com sucesso. Config salva em src/bot/bot-config.json:');
+console.log('Bot registrado com sucesso. Config salva em bot/bot-config.json:');
 console.log(config);

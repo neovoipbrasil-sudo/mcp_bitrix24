@@ -1,9 +1,10 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { Bitrix24Client } from '../bitrix24/client.js';
-import { resolveWebhook } from '../utils/resolve-webhook.js';
-import { loadOtrsTickets } from '../utils/parse-otrs-csv.js';
+import { Bitrix24Client } from '../shared/bitrix24/client.js';
+import { resolveWebhook } from '../shared/utils/resolve-webhook.js';
+import { loadOtrsTickets } from '../shared/utils/parse-otrs-csv.js';
+import { resolveDataDir } from '../shared/utils/data-dir.js';
 import { loadCredentials, protectHtml } from './protect-html.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -18,7 +19,7 @@ function parseArgs(argv) {
     days: null,
     since: null,
     until: null,
-    out: path.join(__dirname, '..', '..', 'reports', 'helpdesk-report.html'),
+    out: path.join(__dirname, 'output', 'helpdesk-report.html'),
     otrs: path.join(__dirname, '..', '..', 'data', 'chamados-otrs.csv'),
     publicUrl: process.env.B24_REPORT_PUBLIC_URL || 'https://claude.ai/code/artifact/bd8798d6-ffff-4438-bc48-bf0c5f56a59c',
     usersFile: null,
@@ -43,7 +44,7 @@ function parseArgs(argv) {
   // --panel: relatório servido pelo painel /reports do bot, que já exige login. Sai sem criptografia,
   // direto na pasta do painel, e os links de cliente usam o endereço do próprio painel.
   if (args.panel) {
-    const reportsDir = process.env.REPORTS_DIR || path.join(__dirname, '..', 'bot', 'data', 'reports');
+    const reportsDir = process.env.REPORTS_DIR || path.join(resolveDataDir(), 'reports');
     if (!argv.some((a) => a.startsWith('--out='))) args.out = path.join(reportsDir, 'helpdesk-report.html');
     if (!argv.some((a) => a.startsWith('--public-url='))) args.publicUrl = '';
     args.noAuth = true;

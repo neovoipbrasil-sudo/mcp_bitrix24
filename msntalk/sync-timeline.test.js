@@ -8,7 +8,7 @@ const crmUpdateMock = vi.fn().mockResolvedValue({ success: true });
 const crmCreateMock = vi.fn();
 
 vi.mock('./find-crm-entity.js', () => ({ findCrmEntity: findCrmEntityMock }));
-vi.mock('../tools/crm.js', () => ({
+vi.mock('../shared/tools/crm.js', () => ({
   timelineAdd: timelineAddMock,
   timelineCommentUpdate: timelineCommentUpdateMock,
   timelinePin: timelinePinMock,

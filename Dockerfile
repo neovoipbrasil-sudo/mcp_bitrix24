@@ -5,4 +5,4 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 COPY . .
 EXPOSE 3300
-CMD ["node", "src/bot/bootstrap.js"]
+CMD ["node", "bot/bootstrap.js"]

@@ -1,6 +1,7 @@
 .git
 node_modules
-docs
-README.md
+**/docs
+**/README.md
 **/*.test.js
 vitest.config.js
+reports/output

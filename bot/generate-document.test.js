@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const callMock = vi.fn();
 
-vi.mock('../bitrix24/client.js', () => ({
+vi.mock('../shared/bitrix24/client.js', () => ({
   Bitrix24Client: vi.fn().mockImplementation(function () {
     this.portal = 'test.bitrix24.com.br';
     this.call = callMock;

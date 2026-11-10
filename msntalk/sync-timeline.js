@@ -1,4 +1,4 @@
-import { timelineAdd, timelineCommentUpdate, timelinePin, crmUpdate, crmCreate } from '../tools/crm.js';
+import { timelineAdd, timelineCommentUpdate, timelinePin, crmUpdate, crmCreate } from '../shared/tools/crm.js';
 import { findCrmEntity } from './find-crm-entity.js';
 
 // Teto de mensagens guardadas por conversa — evita que o comentário cresça

@@ -2,7 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
 // ── Universales ───────────────────────────────────────────────────────────────
-import { callSchema, universalCall, batchSchema, universalBatch } from './src/tools/universal-call.js';
+import { callSchema, universalCall, batchSchema, universalBatch } from '../shared/tools/universal-call.js';
 
 // ── CRM Datos ─────────────────────────────────────────────────────────────────
 import {
@@ -13,19 +13,19 @@ import {
   crmDeleteSchema, crmDelete,
   crmFieldsSchema, crmFields,
   timelineAddSchema, timelineAdd,
-} from './src/tools/crm.js';
+} from '../shared/tools/crm.js';
 
 // ── CRM Config ────────────────────────────────────────────────────────────────
-import { connectTestSchema, connectTest } from './src/tools/connect-test.js';
-import { readConfigSchema, readFullConfig } from './src/tools/read-config.js';
-import { readEntityTypesSchema, readEntityTypes } from './src/tools/read-entity-types.js';
-import { readPipelinesSchema, readPipelines } from './src/tools/read-pipelines.js';
-import { readCustomFieldsSchema, readCustomFields } from './src/tools/read-custom-fields.js';
-import { readAutomationsSchema, readAutomations } from './src/tools/read-automations.js';
-import { readProductCatalogSchema, readProductCatalog } from './src/tools/read-product-catalog.js';
-import { compareConfigsSchema, compareConfigs } from './src/tools/compare-configs.js';
-import { applyConfigSchema, applyConfig } from './src/tools/apply-config.js';
-import { saveUserMappingSchema, saveUserMappingTool } from './src/tools/save-user-mapping.js';
+import { connectTestSchema, connectTest } from '../shared/tools/connect-test.js';
+import { readConfigSchema, readFullConfig } from '../shared/tools/read-config.js';
+import { readEntityTypesSchema, readEntityTypes } from '../shared/tools/read-entity-types.js';
+import { readPipelinesSchema, readPipelines } from '../shared/tools/read-pipelines.js';
+import { readCustomFieldsSchema, readCustomFields } from '../shared/tools/read-custom-fields.js';
+import { readAutomationsSchema, readAutomations } from '../shared/tools/read-automations.js';
+import { readProductCatalogSchema, readProductCatalog } from '../shared/tools/read-product-catalog.js';
+import { compareConfigsSchema, compareConfigs } from '../shared/tools/compare-configs.js';
+import { applyConfigSchema, applyConfig } from '../shared/tools/apply-config.js';
+import { saveUserMappingSchema, saveUserMappingTool } from '../shared/tools/save-user-mapping.js';
 
 // ── Tareas ────────────────────────────────────────────────────────────────────
 import {
@@ -34,11 +34,11 @@ import {
   tasksCreateSchema, tasksCreate,
   tasksUpdateSchema, tasksUpdate,
   tasksCompleteSchema, tasksComplete,
-} from './src/tools/tasks.js';
+} from '../shared/tools/tasks.js';
 
 // ── Usuarios y Departamentos ──────────────────────────────────────────────────
-import { usersListSchema, usersList } from './src/tools/users-departments.js';
-import { departmentsListSchema, departmentsList } from './src/tools/users-departments.js';
+import { usersListSchema, usersList } from '../shared/tools/users-departments.js';
+import { departmentsListSchema, departmentsList } from '../shared/tools/users-departments.js';
 
 // ── Disco ─────────────────────────────────────────────────────────────────────
 import {
@@ -46,10 +46,10 @@ import {
   diskFolderListSchema, diskFolderList,
   diskFileGetSchema, diskFileGet,
   diskFileUploadSchema, diskFileUpload,
-} from './src/tools/disk.js';
+} from '../shared/tools/disk.js';
 
 // ── Calendario ────────────────────────────────────────────────────────────────
-import { calendarListSchema, calendarList, calendarCreateSchema, calendarCreate } from './src/tools/calendar.js';
+import { calendarListSchema, calendarList, calendarCreateSchema, calendarCreate } from '../shared/tools/calendar.js';
 
 // ── Feed, Notificaciones, Grupos, BizProc, Telefonía ─────────────────────────
 import {
@@ -60,7 +60,7 @@ import {
   bizprocListSchema, bizprocList,
   bizprocStartSchema, bizprocStart,
   telephonyCallsSchema, telephonyCalls,
-} from './src/tools/feed-notifications.js';
+} from '../shared/tools/feed-notifications.js';
 
 // ── Catálogo / Productos ──────────────────────────────────────────────────────
 import {
@@ -69,7 +69,7 @@ import {
   productsCreateSchema, productsCreate,
   productsUpdateSchema, productsUpdate,
   productsSectionsSchema, productsSections,
-} from './src/tools/catalog-products.js';
+} from '../shared/tools/catalog-products.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -288,7 +288,7 @@ await server.connect(transport);
 // Auto-test de conexión al arrancar
 if (process.env.B24_DEFAULT_WEBHOOK) {
   try {
-    const { Bitrix24Client } = await import('./src/bitrix24/client.js');
+    const { Bitrix24Client } = await import('../shared/bitrix24/client.js');
     const client = new Bitrix24Client(process.env.B24_DEFAULT_WEBHOOK);
     const res = await client.call('profile');
     const name = `${res.result?.NAME || ''} ${res.result?.LAST_NAME || ''}`.trim();

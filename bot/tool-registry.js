@@ -5,16 +5,16 @@ import {
   crmCreateSchema, crmCreate,
   crmUpdateSchema, crmUpdate,
   crmDeleteSchema, crmDelete,
-} from '../tools/crm.js';
-import { tasksListSchema, tasksList, tasksCreateSchema, tasksCreate } from '../tools/tasks.js';
-import { calendarListSchema, calendarList, calendarCreateSchema, calendarCreate } from '../tools/calendar.js';
-import { usersListSchema, usersList, departmentsListSchema, departmentsList } from '../tools/users-departments.js';
+} from '../shared/tools/crm.js';
+import { tasksListSchema, tasksList, tasksCreateSchema, tasksCreate } from '../shared/tools/tasks.js';
+import { calendarListSchema, calendarList, calendarCreateSchema, calendarCreate } from '../shared/tools/calendar.js';
+import { usersListSchema, usersList, departmentsListSchema, departmentsList } from '../shared/tools/users-departments.js';
 import {
   diskStoragesSchema, diskStorages,
   diskFolderListSchema, diskFolderList,
   diskFileGetSchema, diskFileGet,
   diskFileUploadSchema, diskFileUpload,
-} from '../tools/disk.js';
+} from '../shared/tools/disk.js';
 import {
   feedPostSchema, feedPost,
   notifySendSchema, notifySend,
@@ -23,16 +23,16 @@ import {
   bizprocListSchema, bizprocList,
   bizprocStartSchema, bizprocStart,
   telephonyCallsSchema, telephonyCalls,
-} from '../tools/feed-notifications.js';
+} from '../shared/tools/feed-notifications.js';
 import {
   productsListSchema, productsList,
   productsGetSchema, productsGet,
   productsCreateSchema, productsCreate,
   productsUpdateSchema, productsUpdate,
   productsSectionsSchema, productsSections,
-} from '../tools/catalog-products.js';
-import { readPipelinesSchema, readPipelines } from '../tools/read-pipelines.js';
-import { readCustomFieldsSchema, readCustomFields } from '../tools/read-custom-fields.js';
+} from '../shared/tools/catalog-products.js';
+import { readPipelinesSchema, readPipelines } from '../shared/tools/read-pipelines.js';
+import { readCustomFieldsSchema, readCustomFields } from '../shared/tools/read-custom-fields.js';
 import { generateDocumentSchema, generateDocument } from './generate-document.js';
 
 export const TOOLS = [

@@ -2,10 +2,14 @@
   "name": "bitrix24-mcp",
   "version": "2.0.0",
   "description": "MCP server for Bitrix24 — connect Claude to your CRM, tasks, disk, calendar, and more via an incoming webhook.",
-  "main": "index.js",
+  "main": "mcp-bitrix24/index.js",
   "type": "module",
   "scripts": {
-    "start": "node index.js",
+    "start": "node mcp-bitrix24/index.js",
+    "start:mcp": "node mcp-bitrix24/index.js",
+    "start:bot": "node bot/bootstrap.js",
+    "register:bot": "node bot/register.js",
+    "report:helpdesk": "node reports/helpdesk-report.js",
     "test": "vitest run"
   },
   "keywords": [
