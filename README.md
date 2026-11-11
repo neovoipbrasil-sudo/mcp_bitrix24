@@ -22,7 +22,7 @@ Built and maintained by **[Bit2Beat](https://bit2beat.com)** — Bitrix24 specia
 | **Groups** | List workgroups and projects. |
 | **Business Processes** | List active workflows and start new ones. |
 | **Telephony** | Query the call history log. |
-| **Product Catalog** | List, get, create, and update products and sections. |
+| **Product Catalog** | List, get, create, and update products and sections. Web panel at `/reports/catalogo` with a full catalog read, a diagnosis of folders to delete or merge, inline editing and an AI assistant that proposes changes for review ([docs/catalogo.md](docs/catalogo.md)). |
 | **Configuration** | Export the full portal config (pipelines, stages, custom fields, automations) to JSON, compare two configs, and apply one config to another portal. |
 | **Raw API** | Call any Bitrix24 REST method directly, including batch requests. |
 

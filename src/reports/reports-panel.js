@@ -35,9 +35,9 @@ function safeNext(next) {
   return typeof next === 'string' && next.startsWith('/reports/') && !next.startsWith('//') ? next : '/reports/';
 }
 
-function page({ title, user, body }) {
+function page({ title, user, body, extraLinks = [] }) {
   const nav = user
-    ? `<nav><a href="/reports/">Relatórios</a>${user.role === 'admin' ? '<a href="/reports/usuarios">Usuários</a>' : ''}<a href="/reports/senha">Trocar senha</a>
+    ? `<nav><a href="/reports/">Relatórios</a>${extraLinks.map((l) => `<a href="/reports${l.path}">${esc(l.label)}</a>`).join('')}${user.role === 'admin' ? '<a href="/reports/usuarios">Usuários</a>' : ''}<a href="/reports/senha">Trocar senha</a>
       <form method="post" action="/reports/sair"><button class="link">Sair (${esc(user.username)})</button></form></nav>`
     : '';
   return `<!doctype html>
@@ -113,8 +113,11 @@ function page({ title, user, body }) {
 
 // Painel de relatórios protegido por usuário e senha. Os relatórios são arquivos .html
 // em reportsDir (gerados com --no-auth, já que quem protege o acesso é o próprio painel).
-export function createReportsPanel({ userStore, reportsDir, now = () => Date.now() }) {
+// extraPages: [{ path: '/catalogo', label: 'Catálogo', router }] — outras ferramentas que reaproveitam
+// o mesmo login; são montadas depois da checagem de sessão, com req.reportUser preenchido.
+export function createReportsPanel({ userStore, reportsDir, now = () => Date.now(), extraPages = [] }) {
   const router = express.Router();
+  const pageWithLinks = (opts) => page({ ...opts, extraLinks: extraPages });
   router.use(express.urlencoded({ extended: false }));
 
   const sessions = new Map(); // token -> { username, expires }
@@ -235,10 +238,12 @@ export function createReportsPanel({ userStore, reportsDir, now = () => Date.now
     next();
   });
 
+  for (const extra of extraPages) router.use(extra.path, extra.router);
+
   function passwordPage(req, res, { error, status = 200 } = {}) {
     const user = req.reportUser;
     res.status(status).send(
-      page({
+      pageWithLinks({
         title: 'Trocar senha — Relatórios',
         user: user.mustChangePassword ? null : user,
         body: `<div class="narrow">
@@ -293,7 +298,7 @@ export function createReportsPanel({ userStore, reportsDir, now = () => Date.now
       )
       .join('');
     res.send(
-      page({
+      pageWithLinks({
         title: 'Relatórios',
         user: req.reportUser,
         body: `<p class="eyebrow">Neo Voip · Bitrix24</p>
@@ -315,7 +320,7 @@ export function createReportsPanel({ userStore, reportsDir, now = () => Date.now
 
   // --- Administração de usuários ---
   router.use('/usuarios', (req, res, next) => {
-    if (req.reportUser.role !== 'admin') return res.status(403).send(page({ title: 'Acesso negado', user: req.reportUser, body: '<h1>Acesso negado</h1><p class="hint">Só administradores gerenciam usuários.</p>' }));
+    if (req.reportUser.role !== 'admin') return res.status(403).send(pageWithLinks({ title: 'Acesso negado', user: req.reportUser, body: '<h1>Acesso negado</h1><p class="hint">Só administradores gerenciam usuários.</p>' }));
     next();
   });
 
@@ -338,7 +343,7 @@ export function createReportsPanel({ userStore, reportsDir, now = () => Date.now
       )
       .join('');
     res.status(status).send(
-      page({
+      pageWithLinks({
         title: 'Usuários — Relatórios',
         user: req.reportUser,
         body: `<p class="eyebrow">Administração</p>

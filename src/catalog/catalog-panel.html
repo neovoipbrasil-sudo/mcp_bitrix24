@@ -1,0 +1,736 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Catálogo — Neo Voip</title>
+<style>
+  :root {
+    --paper: #eef1ee; --paper-raised: #ffffff; --paper-sunk: #e4e8e5; --ink: #12181a; --ink-soft: #4a5559; --ink-faint: #7c8a8d;
+    --line: #d4dad5; --accent: #d9622b; --accent-soft: #fbe7dc; --danger: #b03a2e; --danger-soft: #f7e1de; --good: #2f7d5c; --good-soft: #e1f0e8;
+    --busy: #3b6ea5; --busy-soft: #e2ebf5; --warn: #9a6a00; --warn-soft: #f6ecd2;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+    --sans: ui-sans-serif, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --serif: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #10161a; --paper-raised: #171f24; --paper-sunk: #0c1114; --ink: #e9edee; --ink-soft: #a9b4b6; --ink-faint: #6c797c;
+      --line: #2a3438; --accent: #ef7f42; --accent-soft: #33221a; --danger: #e8806f; --danger-soft: #34201d; --good: #5cbd91; --good-soft: #16261e;
+      --busy: #7fb0e0; --busy-soft: #172433; --warn: #e0b557; --warn-soft: #2d2615;
+    }
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  .chat-toggle { display: none !important; }
+  .chat .close-chat { display: none; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); line-height: 1.45; font-size: 14px; }
+  a { color: var(--busy); }
+  button { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.05em; text-transform: uppercase; padding: 0.5rem 0.8rem; border: 1px solid transparent; border-radius: 6px; background: var(--ink); color: var(--paper-raised); cursor: pointer; white-space: nowrap; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  button.ghost { background: var(--paper-raised); color: var(--ink-soft); border-color: var(--line); }
+  button.danger { background: var(--paper-raised); color: var(--danger); border-color: var(--line); }
+  button.accent { background: var(--accent); color: #fff; }
+  button.link { background: none; border: none; color: var(--busy); padding: 0; text-transform: none; letter-spacing: 0; font-family: var(--sans); font-size: 0.85rem; text-decoration: underline; }
+  input, select, textarea { font-family: var(--sans); font-size: 0.9rem; padding: 0.45rem 0.6rem; border: 1px solid var(--line); border-radius: 6px; background: var(--paper-raised); color: var(--ink); min-width: 0; }
+  textarea { resize: vertical; width: 100%; }
+  input:focus, select:focus, textarea:focus, button:focus-visible { outline: 2px solid var(--busy); outline-offset: 1px; }
+  .eyebrow { font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin: 0; }
+  .tag { display: inline-block; font-family: var(--mono); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.05rem 0.4rem; border-radius: 3px; border: 1px solid var(--line); color: var(--ink-soft); white-space: nowrap; vertical-align: middle; }
+  .tag.alta, .tag.off { color: var(--danger); background: var(--danger-soft); border-color: transparent; }
+  .tag.media { color: var(--warn); background: var(--warn-soft); border-color: transparent; }
+  .tag.baixa { color: var(--busy); background: var(--busy-soft); border-color: transparent; }
+  .tag.svc { color: var(--good); background: var(--good-soft); border-color: transparent; }
+  .muted { color: var(--ink-faint); }
+  .mono { font-family: var(--mono); font-size: 0.75rem; }
+
+  header.top { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.25rem; padding: 0.9rem 1rem; border-bottom: 1px solid var(--line); background: var(--paper-raised); }
+  header.top h1 { font-family: var(--serif); font-weight: 400; font-size: 1.4rem; margin: 0; }
+  .stats { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; font-family: var(--mono); font-size: 0.72rem; color: var(--ink-soft); }
+  .stats b { color: var(--ink); font-size: 0.85rem; }
+  .stats .bad b { color: var(--danger); }
+  header.top .actions { margin-left: auto; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+
+  .layout { display: grid; grid-template-columns: 270px minmax(0, 1fr) 400px; height: calc(100% - 64px); min-height: 0; }
+  .pane { min-height: 0; overflow: auto; }
+  .pane.tree { border-right: 1px solid var(--line); padding: 0.75rem 0.5rem 2rem; }
+  .pane.main { padding: 0.75rem 1rem 3rem; }
+  .pane.chat { border-left: 1px solid var(--line); background: var(--paper-raised); display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+  .chat .msgs, .chat .quick { overflow-x: hidden; }
+  .mobile-tabs { display: none; }
+
+  .tree h2, .section-title { font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); font-weight: 500; margin: 0.5rem 0.5rem 0.4rem; display: flex; justify-content: space-between; align-items: center; }
+  .tree ul { list-style: none; margin: 0; padding: 0; }
+  .tree li > .node { display: flex; align-items: center; gap: 0.35rem; padding: 0.3rem 0.5rem; border-radius: 5px; cursor: pointer; }
+  .tree li > .node:hover { background: var(--paper-sunk); }
+  .tree li > .node.sel { background: var(--busy-soft); color: var(--busy); }
+  .tree .node .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tree .node .count { font-family: var(--mono); font-size: 0.68rem; color: var(--ink-faint); }
+  .tree .node .tools { display: none; gap: 0.2rem; }
+  .tree .node:hover .tools, .tree .node.sel .tools { display: flex; }
+  .tree .node .tools button { padding: 0.1rem 0.35rem; font-size: 0.6rem; }
+  .tree .caret { width: 1rem; text-align: center; color: var(--ink-faint); font-size: 0.7rem; flex: none; }
+
+  .tabs { display: flex; gap: 0.25rem; border-bottom: 1px solid var(--line); margin-bottom: 0.75rem; flex-wrap: wrap; }
+  .tabs button { background: none; color: var(--ink-soft); border: none; border-bottom: 2px solid transparent; border-radius: 0; padding: 0.55rem 0.7rem; }
+  .tabs button.on { color: var(--ink); border-bottom-color: var(--accent); }
+  .tabs .badge { display: inline-block; min-width: 1.2rem; padding: 0 0.3rem; border-radius: 9px; background: var(--accent); color: #fff; font-size: 0.6rem; margin-left: 0.3rem; }
+
+  .toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 0.6rem; }
+  .toolbar input[type=search] { flex: 1 1 220px; }
+  .bulk { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; padding: 0.5rem 0.6rem; background: var(--busy-soft); border-radius: 6px; margin-bottom: 0.6rem; }
+  .crumb { font-size: 0.8rem; color: var(--ink-soft); margin: 0 0 0.5rem; }
+
+  table.items { width: 100%; border-collapse: collapse; background: var(--paper-raised); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  table.items th { text-align: left; font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); font-weight: 500; padding: 0.5rem; border-bottom: 1px solid var(--line); background: var(--paper-sunk); cursor: pointer; user-select: none; }
+  table.items td { padding: 0.5rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table.items tr:last-child td { border-bottom: none; }
+  table.items tr.row:hover td { background: var(--paper-sunk); cursor: pointer; }
+  table.items tr.inactive td { color: var(--ink-faint); }
+  table.items .desc { font-size: 0.78rem; color: var(--ink-faint); margin-top: 0.15rem; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+  table.items .num { text-align: right; font-family: var(--mono); font-size: 0.78rem; white-space: nowrap; }
+  table.items td.chk, table.items th.chk { width: 2rem; }
+  .pending-mark { color: var(--accent); font-family: var(--mono); font-size: 0.65rem; }
+
+  .card { background: var(--paper-raised); border: 1px solid var(--line); border-radius: 6px; padding: 0.85rem 1rem; margin-bottom: 0.6rem; }
+  .finding h3 { font-size: 0.92rem; margin: 0.25rem 0 0.3rem; font-weight: 600; }
+  .finding p { margin: 0 0 0.5rem; color: var(--ink-soft); font-size: 0.85rem; }
+  .finding .acts { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .group-title { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); margin: 1.2rem 0 0.5rem; }
+
+  ol.queue { margin: 0; padding: 0; list-style: none; counter-reset: q; }
+  ol.queue li { counter-increment: q; display: flex; gap: 0.6rem; align-items: flex-start; padding: 0.55rem 0; border-bottom: 1px solid var(--line); }
+  ol.queue li::before { content: counter(q); font-family: var(--mono); font-size: 0.7rem; color: var(--ink-faint); min-width: 1.5rem; padding-top: 0.1rem; }
+  ol.queue li .what { flex: 1; min-width: 0; }
+  ol.queue li .src { font-family: var(--mono); font-size: 0.62rem; color: var(--ink-faint); text-transform: uppercase; }
+  ol.queue li.ok .what { color: var(--good); }
+  ol.queue li.err .what { color: var(--danger); }
+  .warn-box { background: var(--warn-soft); color: var(--warn); border-radius: 6px; padding: 0.6rem 0.8rem; font-size: 0.85rem; margin-bottom: 0.75rem; }
+  .err-box { background: var(--danger-soft); color: var(--danger); border-radius: 6px; padding: 0.6rem 0.8rem; font-size: 0.85rem; margin-bottom: 0.75rem; }
+
+  .chat header { padding: 0.8rem 1rem 0.6rem; border-bottom: 1px solid var(--line); }
+  .chat header h2 { margin: 0.15rem 0 0; font-family: var(--serif); font-weight: 400; font-size: 1.1rem; }
+  .chat .msgs { flex: 1; overflow: auto; padding: 0.8rem 1rem; display: flex; flex-direction: column; gap: 0.7rem; }
+  .msg { max-width: 100%; font-size: 0.88rem; }
+  .msg.user { align-self: flex-end; background: var(--ink); color: var(--paper-raised); padding: 0.5rem 0.75rem; border-radius: 10px 10px 2px 10px; max-width: 88%; white-space: pre-wrap; }
+  .msg.bot { align-self: stretch; }
+  .msg.bot p { margin: 0 0 0.45rem; }
+  .msg.bot ul { margin: 0 0 0.45rem; padding-left: 1.1rem; }
+  .msg.err { color: var(--danger); }
+  .msg.thinking { color: var(--ink-faint); font-style: italic; }
+  .proposal { border: 1px solid var(--accent); border-radius: 8px; padding: 0.7rem 0.8rem; background: var(--accent-soft); margin-top: 0.3rem; }
+  .proposal h4 { margin: 0 0 0.2rem; font-size: 0.9rem; }
+  .proposal p { margin: 0 0 0.5rem; font-size: 0.82rem; color: var(--ink-soft); }
+  .proposal ul { list-style: none; margin: 0 0 0.6rem; padding: 0; max-height: 260px; overflow: auto; }
+  .proposal li label { display: flex; gap: 0.45rem; align-items: flex-start; font-size: 0.82rem; padding: 0.2rem 0; cursor: pointer; }
+  .proposal li .act { font-family: var(--mono); font-size: 0.6rem; color: var(--accent); text-transform: uppercase; }
+  .proposal .acts { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .quick { display: flex; flex-wrap: wrap; gap: 0.35rem; padding: 0 1rem 0.5rem; }
+  .quick button { white-space: normal; text-align: left; max-width: 100%; text-transform: none; letter-spacing: 0; font-family: var(--sans); font-size: 0.78rem; background: var(--paper); color: var(--ink-soft); border: 1px solid var(--line); border-radius: 14px; padding: 0.3rem 0.65rem; }
+  .composer { border-top: 1px solid var(--line); padding: 0.6rem 1rem 0.8rem; display: flex; gap: 0.5rem; align-items: flex-end; }
+  .composer textarea { min-height: 2.6rem; max-height: 9rem; }
+  .ctx { font-size: 0.75rem; color: var(--busy); padding: 0 1rem 0.4rem; }
+
+  dialog { border: 1px solid var(--line); border-radius: 10px; padding: 0; width: min(620px, calc(100vw - 2rem)); background: var(--paper-raised); color: var(--ink); }
+  dialog::backdrop { background: rgba(0,0,0,0.4); }
+  dialog form { padding: 1.1rem 1.2rem; }
+  dialog h2 { font-family: var(--serif); font-weight: 400; margin: 0.2rem 0 0.8rem; font-size: 1.25rem; }
+  dialog label { display: flex; flex-direction: column; gap: 0.25rem; font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 0.7rem; }
+  dialog label.inline { flex-direction: row; align-items: center; gap: 0.5rem; font-size: 0.7rem; }
+  dialog .row { display: grid; grid-template-columns: 1fr 1fr; gap: 0 0.7rem; }
+  dialog .foot { display: flex; gap: 0.5rem; justify-content: flex-end; flex-wrap: wrap; margin-top: 0.4rem; }
+  .empty { padding: 2rem 1rem; text-align: center; color: var(--ink-faint); }
+  .loading { padding: 3rem 1rem; text-align: center; color: var(--ink-faint); }
+
+  @media (max-width: 1100px) {
+    .layout { grid-template-columns: 240px minmax(0, 1fr); }
+    .pane.chat { position: fixed; right: 0; top: 0; bottom: 0; width: min(420px, 100vw); z-index: 20; box-shadow: -8px 0 30px rgba(0,0,0,0.2); transform: translateX(100%); transition: transform .2s; }
+    body.chat-open .pane.chat { transform: none; }
+    .chat-toggle { display: inline-block !important; }
+    .chat .close-chat { display: inline-block; }
+  }
+  @media (max-width: 720px) {
+    header.top { padding: 0.75rem 1rem; }
+    .layout { display: block; height: auto; }
+    .pane.tree { display: none; border-right: none; padding: 0.5rem 1rem 1rem; }
+    body.show-tree .pane.tree { display: block; }
+    .pane.main { padding: 0.5rem 1rem 3rem; }
+    .mobile-tabs { display: flex; gap: 0.4rem; padding: 0.6rem 1rem 0; }
+    table.items thead { display: none; }
+    table.items, table.items tbody, table.items tr, table.items td { display: block; width: 100%; }
+    table.items tr { border-bottom: 1px solid var(--line); padding: 0.4rem 0; }
+    table.items td { border: none; padding: 0.15rem 0.6rem; }
+    table.items td.chk { display: none; }
+    table.items .num { text-align: left; }
+    dialog .row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<header class="top">
+  <div>
+    <p class="eyebrow">Neo Voip · Bitrix24</p>
+    <h1>Catálogo de produtos e serviços</h1>
+  </div>
+  <div class="stats" id="stats"></div>
+  <div class="actions">
+    <a href="/reports/" class="mono">← Painel</a>
+    <button class="ghost" id="btn-export" title="Baixar os itens filtrados em CSV">Exportar CSV</button>
+    <button class="ghost" id="btn-refresh">Recarregar do Bitrix24</button>
+    <button class="accent chat-toggle" id="btn-chat">Assistente IA</button>
+  </div>
+</header>
+<div class="mobile-tabs">
+  <button class="ghost" id="btn-tree-mobile">Pastas</button>
+</div>
+<div class="layout">
+  <aside class="pane tree" id="tree"></aside>
+  <main class="pane main">
+    <div class="tabs" role="tablist">
+      <button data-tab="items" class="on">Itens</button>
+      <button data-tab="audit">Diagnóstico <span class="badge" id="badge-audit" hidden></span></button>
+      <button data-tab="queue">Alterações pendentes <span class="badge" id="badge-queue" hidden></span></button>
+    </div>
+    <div id="view"><div class="loading">Lendo o catálogo do Bitrix24…</div></div>
+  </main>
+  <section class="pane chat" aria-label="Assistente de IA">
+    <header>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem">
+        <p class="eyebrow">Assistente de IA</p>
+        <div style="display:flex;gap:.4rem">
+          <button class="link" id="btn-clear-chat">Nova conversa</button>
+          <button class="ghost close-chat" id="btn-close-chat">Fechar</button>
+        </div>
+      </div>
+      <h2>Peça em linguagem natural</h2>
+    </header>
+    <div class="msgs" id="msgs"></div>
+    <div class="quick" id="quick"></div>
+    <div class="ctx" id="ctx" hidden></div>
+    <form class="composer" id="composer">
+      <textarea id="prompt" rows="2" placeholder="Ex.: mova todos os aparelhos IP para a pasta Equipamentos e padronize os nomes"></textarea>
+      <button id="send">Enviar</button>
+    </form>
+  </section>
+</div>
+
+<dialog id="dlg"></dialog>
+
+<script>
+(() => {
+  'use strict';
+  const API = location.pathname.replace(/\/$/, '') + '/api';
+  const $ = (sel, el = document) => el.querySelector(sel);
+  const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem('catalogo:' + k); return v ? JSON.parse(v) : d; } catch { return d; } },
+    set(k, v) { try { localStorage.setItem('catalogo:' + k, JSON.stringify(v)); } catch {} },
+  };
+  const money = (v, cur) => v === null || v === undefined ? '—' : Number(v).toLocaleString('pt-BR', { style: 'currency', currency: cur || 'BRL' });
+  const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
+  const state = {
+    data: null,
+    tab: 'items',
+    section: 'all', // 'all' | 'none' | id
+    expanded: new Set(store.get('expanded', [])),
+    search: '', type: 'any', status: 'active', problem: '',
+    sort: { key: 'name', dir: 1 },
+    selected: new Set(),
+    queue: store.get('queue', []),
+    lastResults: null,
+    chat: store.get('chat', []),
+    busy: false,
+    focusIds: null, // filtro vindo do diagnóstico
+  };
+
+  // ─── Dados ─────────────────────────────────────────────────────────────
+  async function load(refresh) {
+    $('#view').innerHTML = '<div class="loading">Lendo o catálogo do Bitrix24…</div>';
+    try {
+      const res = await fetch(API + '/data' + (refresh ? '?refresh=1' : ''), { headers: { Accept: 'application/json' } });
+      if (res.redirected || res.status === 401) { location.href = '/reports/login?next=' + encodeURIComponent(location.pathname); return; }
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || res.statusText);
+      state.data = body;
+      render();
+    } catch (err) {
+      $('#view').innerHTML = `<div class="err-box">${esc(err.message)}</div><button class="ghost" onclick="location.reload()">Tentar de novo</button>`;
+    }
+  }
+  const snap = () => state.data.snapshot;
+  const sectionById = id => snap().sections.find(s => s.id === Number(id));
+  const productById = id => snap().products.find(p => p.id === Number(id));
+  const canEdit = () => state.data?.user?.canEdit;
+
+  function descendants(id) {
+    const out = new Set([id]);
+    const stack = [id];
+    while (stack.length) {
+      const s = sectionById(stack.pop());
+      for (const c of s?.children ?? []) if (!out.has(c)) { out.add(c); stack.push(c); }
+    }
+    return out;
+  }
+  function sectionOptions(selected, { includeRoot = true, exclude } = {}) {
+    const sorted = [...snap().sections].sort((a, b) => a.path.join('/').localeCompare(b.path.join('/'), 'pt-BR'));
+    const ex = exclude ? descendants(exclude) : new Set();
+    return (includeRoot ? `<option value="0">(sem pasta / raiz)</option>` : '') +
+      sorted.filter(s => !ex.has(s.id)).map(s => `<option value="${s.id}" ${Number(selected) === s.id ? 'selected' : ''}>${esc('· '.repeat(s.depth - 1) + s.name)} (${s.totalCount})</option>`).join('');
+  }
+
+  // ─── Fila de alterações ───────────────────────────────────────────────
+  function opLabel(op) {
+    if (op.label) return op.label;
+    const p = op.productId ? productById(op.productId) : null;
+    const s = op.sectionId ? sectionById(op.sectionId) : null;
+    switch (op.action) {
+      case 'update_product': return `Editar "${p?.name ?? op.productId}": ${Object.keys(op.fields || {}).join(', ')}`;
+      case 'move_product': return `Mover "${p?.name ?? op.productId}" para ${s ? s.path.join(' › ') : 'raiz'}`;
+      case 'set_price': return `Preço de "${p?.name ?? op.productId}" → ${money(op.price, op.currency)}`;
+      case 'create_section': return `Criar pasta "${op.name}"`;
+      case 'update_section': return `Alterar pasta "${s?.name ?? op.sectionId}"`;
+      case 'delete_section': return `Excluir pasta "${s?.name ?? op.sectionId}"`;
+      case 'create_product': return `Criar ${op.kind === 'service' ? 'serviço' : 'produto'} "${op.name}"`;
+      case 'delete_product': return `Excluir "${p?.name ?? op.productId}"`;
+      default: return op.action;
+    }
+  }
+  function enqueue(ops, source) {
+    for (const op of ops) state.queue.push({ ...op, label: opLabel(op), source });
+    state.lastResults = null;
+    store.set('queue', state.queue);
+    renderBadges();
+    if (state.tab === 'queue' || state.tab === 'items') renderView();
+    toast(`${ops.length} alteração(ões) na fila. Revise em "Alterações pendentes".`);
+  }
+  const pendingFor = id => state.queue.some(op => op.productId === id);
+
+  async function applyOps(ops) {
+    if (!canEdit()) { alert('Só administradores aplicam alterações.'); return null; }
+    const danger = ops.filter(o => o.action === 'delete_section' || o.action === 'delete_product').length;
+    const msg = `Aplicar ${ops.length} alteração(ões) no Bitrix24?` + (danger ? `\n\n${danger} delas são exclusões (não dá para desfazer).` : '');
+    if (!confirm(msg)) return null;
+    state.busy = true; renderView();
+    try {
+      const res = await fetch(API + '/apply', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ operations: ops.map(({ source, ...op }) => op) }) });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || res.statusText);
+      return body.results;
+    } catch (err) {
+      alert('Falha ao aplicar: ' + err.message);
+      return null;
+    } finally {
+      state.busy = false;
+    }
+  }
+  async function applyQueue() {
+    const results = await applyOps(state.queue);
+    if (!results) { renderView(); return; }
+    state.lastResults = results.map((r, i) => ({ ...state.queue[i], ok: r.ok, error: r.error }));
+    state.queue = state.lastResults.filter(r => !r.ok).map(({ ok, error, ...op }) => op);
+    store.set('queue', state.queue);
+    await load(true);
+    state.tab = 'queue';
+    render();
+  }
+
+  // ─── Render ───────────────────────────────────────────────────────────
+  function render() {
+    renderStats(); renderTree(); renderBadges(); renderView(); renderChat();
+  }
+  function renderStats() {
+    const s = state.data.audit.stats;
+    $('#stats').innerHTML = `
+      <span><b>${s.sections}</b> pastas</span>
+      <span class="${s.emptySections ? 'bad' : ''}"><b>${s.emptySections}</b> vazias</span>
+      <span><b>${s.products}</b> itens</span>
+      <span><b>${s.activeProducts}</b> ativos</span>
+      <span><b>${s.services}</b> serviços</span>
+      <span class="${s.withoutPrice ? 'bad' : ''}"><b>${s.withoutPrice}</b> sem preço</span>
+      <span class="muted">lido ${new Date(snap().loadedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>`;
+  }
+  function renderBadges() {
+    const n = state.queue.length;
+    $('#badge-queue').hidden = !n; $('#badge-queue').textContent = n;
+    const a = state.data ? state.data.audit.findings.filter(f => f.severity === 'alta').length : 0;
+    $('#badge-audit').hidden = !a; $('#badge-audit').textContent = a;
+  }
+
+  function renderTree() {
+    const sections = snap().sections;
+    const roots = sections.filter(s => !s.parentId || !sectionById(s.parentId)).sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name, 'pt-BR'));
+    const noSection = snap().products.filter(p => !p.sectionId && p.type !== 4).length;
+    const node = s => {
+      const kids = s.children.map(sectionById).filter(Boolean).sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name, 'pt-BR'));
+      const open = state.expanded.has(s.id);
+      const empty = s.totalCount === 0;
+      return `<li>
+        <div class="node ${String(state.section) === String(s.id) ? 'sel' : ''}" data-section="${s.id}">
+          <span class="caret" data-toggle="${s.id}">${kids.length ? (open ? '▾' : '▸') : ''}</span>
+          <span class="name" title="${esc(s.path.join(' › '))}">${esc(s.name)}</span>
+          ${empty ? '<span class="tag alta">vazia</span>' : `<span class="count">${s.activeCount}/${s.totalCount}</span>`}
+          ${canEdit() ? `<span class="tools"><button class="ghost" data-edit-section="${s.id}" title="Editar pasta">✎</button></span>` : ''}
+        </div>
+        ${kids.length && open ? `<ul style="padding-left:.9rem">${kids.map(node).join('')}</ul>` : ''}
+      </li>`;
+    };
+    $('#tree').innerHTML = `
+      <h2>Pastas ${canEdit() ? '<button class="ghost" id="btn-new-root" style="padding:.15rem .45rem">+ Nova</button>' : ''}</h2>
+      <ul>
+        <li><div class="node ${state.section === 'all' ? 'sel' : ''}" data-section="all"><span class="caret"></span><span class="name">Todos os itens</span><span class="count">${snap().products.filter(p => p.type !== 4).length}</span></div></li>
+        <li><div class="node ${state.section === 'none' ? 'sel' : ''}" data-section="none"><span class="caret"></span><span class="name">Sem pasta</span>${noSection ? `<span class="tag media">${noSection}</span>` : '<span class="count">0</span>'}</div></li>
+      </ul>
+      <ul style="margin-top:.3rem">${roots.map(node).join('') || '<li class="muted" style="padding:.5rem">Nenhuma pasta criada.</li>'}</ul>
+      <p class="muted" style="font-size:.75rem;padding:.75rem .5rem 0">Números: ativos / total, incluindo subpastas.</p>`;
+  }
+
+  function filteredProducts() {
+    let list = snap().products.filter(p => p.type !== 4);
+    if (state.focusIds) list = list.filter(p => state.focusIds.ids.has(p.id));
+    else {
+      if (state.section === 'none') list = list.filter(p => !p.sectionId);
+      else if (state.section !== 'all') { const ids = descendants(Number(state.section)); list = list.filter(p => ids.has(p.sectionId)); }
+    }
+    if (state.search) { const q = norm(state.search); list = list.filter(p => norm(p.name).includes(q) || norm(p.description).includes(q) || String(p.id) === q); }
+    if (state.type !== 'any') list = list.filter(p => state.type === 'service' ? p.type === 7 : state.type === 'sku' ? p.type === 3 : p.type !== 7 && p.type !== 3);
+    if (state.status !== 'any') list = list.filter(p => state.status === 'active' ? p.active : !p.active);
+    if (state.problem === 'price') list = list.filter(p => p.type !== 3 && !p.price);
+    if (state.problem === 'desc') list = list.filter(p => !String(p.description).trim());
+    if (state.problem === 'section') list = list.filter(p => !p.sectionId);
+    const { key, dir } = state.sort;
+    const val = p => key === 'price' ? (p.price ?? -1) : key === 'section' ? p.sectionPath.join('/') : key === 'type' ? p.typeLabel : key === 'id' ? p.id : p.name;
+    return list.sort((a, b) => { const x = val(a), y = val(b); return (typeof x === 'number' ? x - y : String(x).localeCompare(String(y), 'pt-BR')) * dir; });
+  }
+
+  function renderView() {
+    document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === state.tab));
+    if (!state.data) return;
+    if (state.tab === 'items') renderItems();
+    else if (state.tab === 'audit') renderAudit();
+    else renderQueue();
+  }
+
+  function renderItems() {
+    const list = filteredProducts();
+    const sel = state.selected;
+    const where = state.focusIds ? `<b>${esc(state.focusIds.title)}</b> · <button class="link" id="btn-clear-focus">limpar filtro</button>`
+      : state.section === 'all' ? 'Todos os itens' : state.section === 'none' ? 'Itens sem pasta' : esc(sectionById(state.section)?.path.join(' › ') ?? '');
+    $('#view').innerHTML = `
+      <p class="crumb">${where} · <span class="muted">${list.length} item(ns)</span></p>
+      <div class="toolbar">
+        <input type="search" id="q" placeholder="Buscar por nome, descrição ou ID" value="${esc(state.search)}">
+        <select id="f-type"><option value="any">Todos os tipos</option><option value="product">Produtos</option><option value="service">Serviços</option><option value="sku">Com variações</option></select>
+        <select id="f-status"><option value="active">Ativos</option><option value="inactive">Inativos</option><option value="any">Ativos e inativos</option></select>
+        <select id="f-problem"><option value="">Sem filtro de problema</option><option value="price">Sem preço</option><option value="desc">Sem descrição</option><option value="section">Sem pasta</option></select>
+        ${canEdit() ? '<button class="ghost" id="btn-new-item">+ Novo item</button>' : ''}
+      </div>
+      ${sel.size ? `<div class="bulk"><b>${sel.size} selecionado(s)</b>
+        ${canEdit() ? `<select id="bulk-section">${sectionOptions(null)}</select><button class="ghost" id="bulk-move">Mover</button>
+        <button class="ghost" id="bulk-on">Ativar</button><button class="ghost" id="bulk-off">Desativar</button>` : ''}
+        <button class="ghost" id="bulk-ask">Perguntar à IA</button><button class="link" id="bulk-clear">limpar</button></div>` : ''}
+      ${list.length ? `<table class="items"><thead><tr>
+        <th class="chk"><input type="checkbox" id="chk-all" aria-label="Selecionar todos" ${list.every(p => sel.has(p.id)) ? 'checked' : ''}></th>
+        <th data-sort="name">Nome</th><th data-sort="type">Tipo</th><th data-sort="section">Pasta</th><th data-sort="price" class="num">Preço</th></tr></thead>
+        <tbody>${list.map(p => `<tr class="row ${p.active ? '' : 'inactive'}" data-id="${p.id}">
+          <td class="chk"><input type="checkbox" data-chk="${p.id}" ${sel.has(p.id) ? 'checked' : ''} aria-label="Selecionar ${esc(p.name)}"></td>
+          <td><span class="muted mono">#${p.id}</span> ${esc(p.name)} ${p.active ? '' : '<span class="tag off">inativo</span>'} ${pendingFor(p.id) ? '<span class="pending-mark">● pendente</span>' : ''}
+            ${p.description ? `<div class="desc">${esc(p.description)}</div>` : '<div class="desc" style="color:var(--warn)">sem descrição</div>'}</td>
+          <td><span class="tag ${p.type === 7 ? 'svc' : ''}">${esc(p.typeLabel)}</span>${p.variations ? ` <span class="muted mono">${p.variations} var.</span>` : ''}</td>
+          <td class="muted">${esc(p.sectionPath.join(' › ') || '—')}</td>
+          <td class="num">${p.type === 3 && !p.price ? '<span class="muted">nas variações</span>' : p.price ? money(p.price, p.currency) : '<span style="color:var(--danger)">sem preço</span>'}</td>
+        </tr>`).join('')}</tbody></table>` : '<div class="card empty">Nenhum item com esses filtros.</div>'}`;
+    $('#f-type').value = state.type; $('#f-status').value = state.status; $('#f-problem').value = state.problem;
+  }
+
+  function renderAudit() {
+    const { findings } = state.data.audit;
+    if (!findings.length) { $('#view').innerHTML = '<div class="card empty">Nenhum problema encontrado. O catálogo está organizado. 🎉</div>'; return; }
+    const groups = {};
+    for (const f of findings) (groups[f.group] ||= []).push(f);
+    $('#view').innerHTML = `<p class="crumb">${findings.length} ponto(s) para revisar. As sugestões entram na fila de alterações; nada muda no Bitrix24 até você aplicar.</p>` +
+      Object.entries(groups).map(([g, fs]) => `<div class="group-title">${esc(g)} · ${fs.length}</div>` + fs.map(f => `
+        <div class="card finding">
+          <span class="tag ${f.severity === 'média' ? 'media' : f.severity}">${esc(f.severity)}</span>
+          <h3>${esc(f.title)}</h3>
+          <p>${esc(f.detail)}</p>
+          <div class="acts">
+            ${f.targets.some(t => t.type === 'product') ? `<button class="ghost" data-focus="${esc(f.id)}">Ver ${f.targets.filter(t => t.type === 'product').length} item(ns)</button>` : ''}
+            ${f.targets.length === 1 && f.targets[0].type === 'section' ? `<button class="ghost" data-goto-section="${f.targets[0].id}">Abrir pasta</button>` : ''}
+            ${f.operations.length && canEdit() ? `<button data-fix="${esc(f.id)}">Adicionar sugestão à fila (${f.operations.length})</button>` : ''}
+            <button class="ghost" data-ask-finding="${esc(f.id)}">Pedir solução à IA</button>
+          </div>
+        </div>`).join('')).join('');
+  }
+
+  function renderQueue() {
+    const q = state.queue;
+    const last = state.lastResults;
+    let html = '';
+    if (last) {
+      const ok = last.filter(r => r.ok).length;
+      html += `<div class="card"><b>Resultado da última aplicação:</b> ${ok} de ${last.length} aplicada(s) com sucesso.${ok < last.length ? ' As que falharam continuam na fila.' : ''}
+        <ol class="queue" style="margin-top:.5rem">${last.map(r => `<li class="${r.ok ? 'ok' : 'err'}"><div class="what">${r.ok ? '✓' : '✗'} ${esc(r.label)}${r.error ? `<div class="mono">${esc(r.error)}</div>` : ''}</div></li>`).join('')}</ol></div>`;
+    }
+    if (!q.length) { $('#view').innerHTML = html + '<div class="card empty">Nenhuma alteração pendente. Edite um item, use uma sugestão do diagnóstico ou peça ao assistente.</div>'; return; }
+    const deletes = q.filter(o => o.action === 'delete_section' || o.action === 'delete_product').length;
+    html += `${deletes ? `<div class="warn-box">${deletes} exclusão(ões) na fila. No Bitrix24, excluir não tem volta. Pastas só são excluídas se estiverem vazias na hora (o sistema confere).</div>` : ''}
+      <div class="toolbar"><b>${q.length} alteração(ões) na ordem em que serão aplicadas</b><span style="flex:1"></span>
+        <button class="ghost" id="q-clear">Descartar todas</button>
+        ${canEdit() ? `<button class="accent" id="q-apply" ${state.busy ? 'disabled' : ''}>${state.busy ? 'Aplicando…' : 'Aplicar no Bitrix24'}</button>` : '<span class="muted">Só administradores aplicam.</span>'}</div>
+      <div class="card"><ol class="queue">${q.map((op, i) => `<li><div class="what">${esc(op.label)}<div class="src">${esc(op.source || 'manual')} · ${esc(op.action)}</div></div>
+        <button class="ghost" data-q-up="${i}" ${i === 0 ? 'disabled' : ''} title="Subir">↑</button><button class="danger" data-q-del="${i}" title="Remover">✕</button></li>`).join('')}</ol></div>`;
+    $('#view').innerHTML = html;
+  }
+
+  // ─── Diálogos de edição ───────────────────────────────────────────────
+  const dlg = $('#dlg');
+  function openProduct(p) {
+    const isNew = !p;
+    p = p || { name: '', description: '', detailText: '', price: null, currency: snap().baseCurrency, sectionId: typeof state.section === 'number' || /^\d+$/.test(state.section) ? Number(state.section) : null, active: true, type: 1, sort: 500 };
+    const ro = !canEdit();
+    dlg.innerHTML = `<form method="dialog" id="f-product">
+      <p class="eyebrow">${isNew ? 'Novo item' : `#${p.id} · ${esc(p.typeLabel)}`}</p>
+      <h2>${isNew ? 'Cadastrar item' : esc(p.name)}</h2>
+      ${isNew ? `<label>Tipo <select name="kind"><option value="product">Produto (físico)</option><option value="service">Serviço (intangível)</option></select></label>` : ''}
+      <label>Nome <input name="name" required value="${esc(p.name)}" ${ro ? 'readonly' : ''}></label>
+      <label>Descrição curta (aparece na proposta) <textarea name="description" rows="3" ${ro ? 'readonly' : ''} placeholder="Função: … | Inclui: … | Cobrança: mensal/única">${esc(p.previewText ?? p.description)}</textarea></label>
+      <label>Descrição detalhada <textarea name="detailText" rows="3" ${ro ? 'readonly' : ''}>${esc(p.detailText)}</textarea></label>
+      <div class="row">
+        <label>Pasta <select name="sectionId" ${ro ? 'disabled' : ''}>${sectionOptions(p.sectionId)}</select></label>
+        <label>Preço de venda (${esc(p.currency || snap().baseCurrency)}) <input name="price" type="number" min="0" step="0.01" value="${p.price ?? ''}" ${ro || p.type === 3 ? 'readonly' : ''}></label>
+      </div>
+      <div class="row">
+        <label>Ordem <input name="sort" type="number" value="${p.sort ?? 500}" ${ro ? 'readonly' : ''}></label>
+        <label class="inline" style="margin-top:1.1rem"><input type="checkbox" name="active" ${p.active ? 'checked' : ''} ${ro ? 'disabled' : ''}> Ativo (disponível para venda)</label>
+      </div>
+      ${!isNew && p.otherPrices?.length ? `<p class="muted" style="font-size:.8rem">Outros preços: ${p.otherPrices.map(o => `${esc(snap().priceTypes.find(t => t.id === o.typeId)?.name ?? o.typeId)} ${money(o.price, o.currency)}`).join(' · ')}</p>` : ''}
+      <div class="foot">
+        ${!isNew ? `<button type="button" class="ghost" data-ask-product="${p.id}">Melhorar com IA</button>` : ''}
+        ${!isNew && canEdit() ? `<button type="button" class="danger" id="btn-del-product">Excluir…</button>` : ''}
+        <span style="flex:1"></span>
+        <button type="button" class="ghost" value="cancel" id="dlg-cancel">${ro ? 'Fechar' : 'Cancelar'}</button>
+        ${ro ? '' : `<button type="submit" value="ok">${isNew ? 'Adicionar à fila' : 'Salvar na fila'}</button>`}
+      </div></form>`;
+    dlg.showModal();
+    $('#dlg-cancel').onclick = () => dlg.close();
+    const del = $('#btn-del-product');
+    if (del) del.onclick = () => {
+      if (!confirm(`Excluir "${p.name}"? Prefira desativar: excluir pode afetar negócios antigos e não tem volta.`)) return;
+      enqueue([{ action: 'delete_product', productId: p.id }], 'manual'); dlg.close();
+    };
+    $('#f-product').onsubmit = e => {
+      if (ro) return;
+      const f = new FormData(e.target);
+      const name = String(f.get('name')).trim();
+      const description = String(f.get('description'));
+      const detailText = String(f.get('detailText'));
+      const sectionId = Number(f.get('sectionId')) || 0;
+      const priceRaw = String(f.get('price'));
+      const active = f.get('active') === 'on';
+      const sort = Number(f.get('sort')) || 500;
+      if (isNew) {
+        enqueue([{ action: 'create_product', kind: f.get('kind'), name, description, sectionId: sectionId || undefined, price: priceRaw === '' ? undefined : Number(priceRaw), currency: snap().baseCurrency, active, sort }], 'manual');
+        return;
+      }
+      const fields = {};
+      if (name !== p.name) fields.name = name;
+      if (description !== (p.previewText ?? '')) fields.description = description;
+      if (detailText !== (p.detailText ?? '')) fields.detailText = detailText;
+      if (sectionId !== (p.sectionId || 0)) fields.sectionId = sectionId;
+      if (active !== p.active) fields.active = active;
+      if (sort !== p.sort) fields.sort = sort;
+      const ops = [];
+      if (Object.keys(fields).length) ops.push({ action: 'update_product', productId: p.id, fields });
+      if (priceRaw !== '' && Number(priceRaw) !== p.price && p.type !== 3) ops.push({ action: 'set_price', productId: p.id, price: Number(priceRaw), currency: p.currency || snap().baseCurrency });
+      if (ops.length) enqueue(ops, 'manual'); else toast('Nada mudou.');
+    };
+  }
+
+  function openSection(s, parentId) {
+    const isNew = !s;
+    dlg.innerHTML = `<form method="dialog" id="f-section">
+      <p class="eyebrow">${isNew ? 'Nova pasta' : `Pasta #${s.id} · ${s.totalCount} item(ns), ${s.children.length} subpasta(s)`}</p>
+      <h2>${isNew ? 'Criar pasta' : esc(s.path.join(' › '))}</h2>
+      <label>Nome <input name="name" required value="${esc(s?.name ?? '')}"></label>
+      <label>Dentro de <select name="parentId">${sectionOptions(isNew ? parentId : s.parentId, { exclude: s?.id })}</select></label>
+      <label>Ordem <input name="sort" type="number" value="${s?.sort ?? 500}"></label>
+      ${!isNew && (s.totalCount || s.children.length) ? '<p class="warn-box">Para excluir, mova antes os itens e subpastas: no Bitrix24, excluir a pasta apaga tudo que está dentro.</p>' : ''}
+      <div class="foot">
+        ${!isNew ? `<button type="button" class="ghost" id="btn-sub">+ Subpasta</button>` : ''}
+        ${!isNew && !s.totalCount && !s.children.length ? '<button type="button" class="danger" id="btn-del-section">Excluir pasta</button>' : ''}
+        <span style="flex:1"></span>
+        <button type="button" class="ghost" id="dlg-cancel">Cancelar</button>
+        <button type="submit">Adicionar à fila</button>
+      </div></form>`;
+    dlg.showModal();
+    $('#dlg-cancel').onclick = () => dlg.close();
+    const sub = $('#btn-sub'); if (sub) sub.onclick = () => openSection(null, s.id);
+    const del = $('#btn-del-section'); if (del) del.onclick = () => { enqueue([{ action: 'delete_section', sectionId: s.id }], 'manual'); dlg.close(); };
+    $('#f-section').onsubmit = e => {
+      const f = new FormData(e.target);
+      const name = String(f.get('name')).trim();
+      const pid = Number(f.get('parentId')) || 0;
+      const sort = Number(f.get('sort')) || 500;
+      if (isNew) { enqueue([{ action: 'create_section', name, parentId: pid || undefined, sort }], 'manual'); return; }
+      const op = { action: 'update_section', sectionId: s.id };
+      if (name !== s.name) op.name = name;
+      if (pid !== (s.parentId || 0)) op.parentId = pid;
+      if (sort !== s.sort) op.sort = sort;
+      if (Object.keys(op).length > 2) enqueue([op], 'manual'); else toast('Nada mudou.');
+    };
+  }
+
+  // ─── Assistente ───────────────────────────────────────────────────────
+  const QUICK = [
+    'Faça uma leitura completa do catálogo e me explique como ele está organizado hoje',
+    'Quais pastas posso excluir ou fundir? Monte a proposta',
+    'Proponha uma nova organização de pastas para todo o catálogo',
+    'Padronize os nomes dos itens ativos',
+    'Escreva descrições para os itens que estão sem descrição',
+    'Quais itens deveriam ser cadastrados como serviço?',
+  ];
+  function md(text) {
+    const lines = esc(text).split('\n');
+    let out = '', inList = false;
+    for (const raw of lines) {
+      const line = raw.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/`([^`]+)`/g, '<code>$1</code>');
+      const li = line.match(/^\s*(?:[-*]|\d+\.)\s+(.*)/);
+      if (li) { if (!inList) { out += '<ul>'; inList = true; } out += `<li>${li[1]}</li>`; continue; }
+      if (inList) { out += '</ul>'; inList = false; }
+      if (line.trim().replace(/^#+\s*/, '')) out += `<p>${line.replace(/^#+\s*/, '')}</p>`;
+    }
+    return out + (inList ? '</ul>' : '');
+  }
+  function renderChat() {
+    const box = $('#msgs');
+    if (!state.chat.length) {
+      box.innerHTML = `<div class="msg bot"><p>Olá! Eu leio o catálogo inteiro e sugiro mudanças: organizar pastas, apontar o que pode ser excluído, padronizar nomes, escrever descrições e ajustar preços.</p><p>Tudo que eu propuser vira uma lista para você revisar. <b>Nada muda no Bitrix24 até você aplicar.</b></p></div>`;
+    } else {
+      box.innerHTML = state.chat.map((m, i) => {
+        if (m.role === 'user') return `<div class="msg user">${esc(m.content)}</div>`;
+        if (m.role === 'error') return `<div class="msg err">${esc(m.content)}</div>`;
+        return `<div class="msg bot">${md(m.content)}${(m.proposals || []).map((p, j) => `
+          <div class="proposal" data-prop="${i}:${j}">
+            <h4>${esc(p.title)}</h4>${p.summary ? `<p>${esc(p.summary)}</p>` : ''}
+            <ul>${p.operations.map((op, k) => `<li><label><input type="checkbox" data-op="${k}" checked><span><span class="act">${esc(op.action)}</span><br>${esc(op.label || opLabel(op))}</span></label></li>`).join('')}</ul>
+            <div class="acts">${p.queued ? '<span class="muted">Adicionada à fila.</span>' : `<button data-prop-queue="${i}:${j}">Adicionar à fila (${p.operations.length})</button>`}</div>
+          </div>`).join('')}</div>`;
+      }).join('');
+    }
+    if (state.busy === 'chat') box.innerHTML += '<div class="msg thinking">Analisando o catálogo…</div>';
+    $('#quick').innerHTML = state.chat.length > 2 ? '' : QUICK.map(q => `<button type="button" data-quick="${esc(q)}">${esc(q)}</button>`).join('');
+    $('#ctx').hidden = !state.selected.size;
+    $('#ctx').textContent = state.selected.size ? `Contexto: ${state.selected.size} item(ns) selecionado(s) serão enviados junto com a pergunta.` : '';
+    box.scrollTop = box.scrollHeight;
+  }
+  async function ask(text) {
+    text = String(text || '').trim();
+    if (!text || state.busy === 'chat') return;
+    if (state.selected.size) {
+      const items = [...state.selected].map(productById).filter(Boolean).map(p => `#${p.id} ${p.name}`);
+      text += `\n\n(Itens selecionados na tela: ${items.join('; ')})`;
+    }
+    const history = state.chat.filter(m => m.role === 'user' || m.role === 'assistant').map(m => ({ role: m.role, content: m.content + (m.proposals?.length ? `\n[Propus: ${m.proposals.map(p => `${p.title} (${p.operations.length} operações)`).join('; ')}]` : '') }));
+    state.chat.push({ role: 'user', content: text });
+    state.busy = 'chat'; renderChat(); openChat();
+    try {
+      const res = await fetch(API + '/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: text, history }) });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || res.statusText);
+      state.chat.push({ role: 'assistant', content: body.reply, proposals: body.proposals || [] });
+    } catch (err) {
+      state.chat.push({ role: 'error', content: 'Erro: ' + err.message });
+    } finally {
+      state.busy = false;
+      store.set('chat', state.chat.slice(-40));
+      renderChat();
+    }
+  }
+  const openChat = () => document.body.classList.add('chat-open');
+
+  // ─── Eventos ──────────────────────────────────────────────────────────
+  let toastTimer;
+  function toast(msg) {
+    let t = $('#toast');
+    if (!t) { t = document.createElement('div'); t.id = 'toast'; t.style.cssText = 'position:fixed;left:50%;bottom:1.2rem;transform:translateX(-50%);background:var(--ink);color:var(--paper-raised);padding:.6rem 1rem;border-radius:8px;font-size:.85rem;z-index:50;max-width:calc(100vw - 2rem)'; document.body.appendChild(t); }
+    t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 3500);
+  }
+
+  document.addEventListener('click', e => {
+    const t = e.target.closest('button, [data-section], [data-toggle], tr.row, input[type=checkbox], th[data-sort]');
+    if (!t) return;
+    const d = t.dataset;
+    if (t.matches('.tabs button')) { state.tab = d.tab; renderView(); return; }
+    if (d.toggle) { const id = Number(d.toggle); state.expanded.has(id) ? state.expanded.delete(id) : state.expanded.add(id); store.set('expanded', [...state.expanded]); renderTree(); e.stopPropagation(); return; }
+    if (d.editSection) { openSection(sectionById(d.editSection)); e.stopPropagation(); return; }
+    if (d.section !== undefined && !e.target.closest('button')) {
+      state.section = d.section === 'all' || d.section === 'none' ? d.section : Number(d.section);
+      if (typeof state.section === 'number') state.expanded.add(state.section);
+      state.focusIds = null; state.tab = 'items'; document.body.classList.remove('show-tree'); renderTree(); renderView(); return;
+    }
+    if (t.id === 'btn-new-root') return openSection(null, 0);
+    if (t.id === 'btn-new-item') return openProduct(null);
+    if (t.id === 'btn-refresh') return load(true);
+    if (t.id === 'btn-chat') return openChat();
+    if (t.id === 'btn-close-chat') return document.body.classList.remove('chat-open');
+    if (t.id === 'btn-tree-mobile') return document.body.classList.toggle('show-tree');
+    if (t.id === 'btn-clear-chat') { state.chat = []; store.set('chat', []); return renderChat(); }
+    if (t.id === 'btn-clear-focus') { state.focusIds = null; return renderView(); }
+    if (t.id === 'btn-export') return exportCsv();
+    if (d.sort) { state.sort = { key: d.sort, dir: state.sort.key === d.sort ? -state.sort.dir : 1 }; return renderItems(); }
+    if (t.id === 'chk-all') { const list = filteredProducts(); t.checked ? list.forEach(p => state.selected.add(p.id)) : list.forEach(p => state.selected.delete(p.id)); renderItems(); renderChat(); return; }
+    if (d.chk) { const id = Number(d.chk); t.checked ? state.selected.add(id) : state.selected.delete(id); renderItems(); renderChat(); e.stopPropagation(); return; }
+    if (t.matches('tr.row') && !e.target.closest('input')) return openProduct(productById(t.dataset.id));
+    if (t.id === 'bulk-clear') { state.selected.clear(); renderItems(); return renderChat(); }
+    if (t.id === 'bulk-move') { const sid = Number($('#bulk-section').value) || 0; enqueue([...state.selected].map(id => ({ action: 'move_product', productId: id, sectionId: sid })), 'manual'); state.selected.clear(); return render(); }
+    if (t.id === 'bulk-on' || t.id === 'bulk-off') { const active = t.id === 'bulk-on'; enqueue([...state.selected].filter(id => productById(id)?.active !== active).map(id => ({ action: 'update_product', productId: id, fields: { active } })), 'manual'); state.selected.clear(); return render(); }
+    if (t.id === 'bulk-ask') return ask('Analise os itens selecionados e sugira melhorias (pasta, nome, descrição, preço, tipo).');
+    if (d.focus) { const f = state.data.audit.findings.find(x => x.id === d.focus); state.focusIds = { title: f.title, ids: new Set(f.targets.filter(x => x.type === 'product').map(x => x.id)) }; state.status = 'any'; state.tab = 'items'; return renderView(); }
+    if (d.gotoSection) { state.section = Number(d.gotoSection); state.focusIds = null; state.tab = 'items'; return render(); }
+    if (d.fix) { const f = state.data.audit.findings.find(x => x.id === d.fix); return enqueue(f.operations, 'diagnóstico'); }
+    if (d.askFinding) { const f = state.data.audit.findings.find(x => x.id === d.askFinding); return ask(`Resolva este ponto do diagnóstico e monte a proposta: "${f.title}". ${f.detail}`); }
+    if (d.askProduct) { dlg.close(); const p = productById(d.askProduct); return ask(`Revise o item #${p.id} "${p.name}" e proponha melhorias de nome, descrição, pasta e tipo.`); }
+    if (d.quick) return ask(d.quick);
+    if (d.propQueue) {
+      const [i, j] = d.propQueue.split(':').map(Number);
+      const prop = state.chat[i].proposals[j];
+      const box = document.querySelector(`[data-prop="${i}:${j}"]`);
+      const picked = [...box.querySelectorAll('input[data-op]')].filter(x => x.checked).map(x => prop.operations[Number(x.dataset.op)]);
+      if (!picked.length) return toast('Nenhuma operação marcada.');
+      enqueue(picked, 'assistente IA'); prop.queued = true; store.set('chat', state.chat.slice(-40)); renderChat(); state.tab = 'queue'; return renderView();
+    }
+    if (d.qDel !== undefined) { state.queue.splice(Number(d.qDel), 1); store.set('queue', state.queue); renderBadges(); return renderQueue(); }
+    if (d.qUp !== undefined) { const i = Number(d.qUp); [state.queue[i - 1], state.queue[i]] = [state.queue[i], state.queue[i - 1]]; store.set('queue', state.queue); return renderQueue(); }
+    if (t.id === 'q-clear') { if (confirm('Descartar todas as alterações pendentes?')) { state.queue = []; state.lastResults = null; store.set('queue', []); renderBadges(); renderQueue(); } return; }
+    if (t.id === 'q-apply') return applyQueue();
+  });
+
+  document.addEventListener('input', e => {
+    if (e.target.id === 'q') { state.search = e.target.value; const pos = e.target.selectionStart; renderItems(); const q = $('#q'); q.focus(); q.setSelectionRange(pos, pos); }
+  });
+  document.addEventListener('change', e => {
+    if (e.target.id === 'f-type') { state.type = e.target.value; renderItems(); }
+    if (e.target.id === 'f-status') { state.status = e.target.value; renderItems(); }
+    if (e.target.id === 'f-problem') { state.problem = e.target.value; renderItems(); }
+  });
+  $('#composer').addEventListener('submit', e => { e.preventDefault(); const v = $('#prompt').value; $('#prompt').value = ''; ask(v); });
+  $('#prompt').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('#composer').requestSubmit(); } });
+
+  function exportCsv() {
+    const rows = [['ID', 'Nome', 'Tipo', 'Pasta', 'Preço', 'Moeda', 'Ativo', 'Descrição']]
+      .concat(filteredProducts().map(p => [p.id, p.name, p.typeLabel, p.sectionPath.join(' > '), p.price ?? '', p.currency ?? '', p.active ? 'Sim' : 'Não', p.description]));
+    const csv = rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(';')).join('\r\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
+    a.download = `catalogo-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+  }
+
+  renderChat();
+  load(false);
+})();
+</script>
+</body>
+</html>

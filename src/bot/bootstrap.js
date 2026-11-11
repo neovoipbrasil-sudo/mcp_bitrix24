@@ -18,6 +18,9 @@ import { refreshAdditionalContacts } from '../msntalk/refresh-additional-contact
 import { reconcilePending } from '../msntalk/reconcile-pending.js';
 import { createReportUserStore } from '../reports/report-users.js';
 import { createReportsPanel } from '../reports/reports-panel.js';
+import { createCatalogService } from '../catalog/catalog-service.js';
+import { createCatalogAgent } from '../catalog/catalog-agent.js';
+import { createCatalogPanel } from '../catalog/catalog-panel.js';
 
 const PORT = process.env.BOT_PORT || 3300;
 
@@ -132,7 +135,16 @@ const app = createApp({
 // admin/admin com troca de senha obrigatória). Os relatórios são os .html gerados em REPORTS_DIR.
 const reportUserStore = createReportUserStore({ filePath: new URL('./data/report-users.json', import.meta.url).pathname });
 const reportsDir = process.env.REPORTS_DIR || new URL('./data/reports', import.meta.url).pathname;
-app.use('/reports', createReportsPanel({ userStore: reportUserStore, reportsDir }));
+// Catálogo de produtos e serviços (/reports/catalogo): mesmo login do painel de relatórios.
+// Cliente Bitrix próprio para que uma leitura completa do catálogo não segure a fila do bot.
+const catalogService = createCatalogService({ client: new Bitrix24Client(resolveWebhook(), { minDelay: 600 }) });
+const catalogAgent = createCatalogAgent({ anthropic, catalogService });
+const catalogPanel = createCatalogPanel({ catalogService, catalogAgent, auditLog });
+app.use('/reports', createReportsPanel({
+  userStore: reportUserStore,
+  reportsDir,
+  extraPages: [{ path: '/catalogo', label: 'Catálogo', router: catalogPanel }],
+}));
 
 app.listen(PORT, () => {
   console.log(`Bot Server escutando na porta ${PORT}`);
