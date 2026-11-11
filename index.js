@@ -261,23 +261,23 @@ server.tool('b24_telephony_calls',
 
 // ── Catálogo / Productos ──────────────────────────────────────────────────────
 server.tool('b24_products_list',
-  'Lista productos del catálogo con filtros por sección, precio, estado activo, etc.',
+  'Lista productos del catálogo (catalog.product.list, campos camelCase) con filtros por sección, nombre, estado activo, etc. Incluye el precio base.',
   productsListSchema.shape, wrap(productsList));
 
 server.tool('b24_products_get',
-  'Obtiene el detalle completo de un producto por ID.',
+  'Obtiene el detalle completo de un producto por ID, con su precio base.',
   productsGetSchema.shape, wrap(productsGet));
 
 server.tool('b24_products_create',
-  'Crea un nuevo producto en el catálogo.',
+  'Crea un nuevo producto en el catálogo (campos camelCase; price/currency se graban como precio base).',
   productsCreateSchema.shape, wrap(productsCreate));
 
 server.tool('b24_products_update',
-  'Actualiza un producto del catálogo.',
+  'Actualiza un producto del catálogo (campos camelCase; price/currency actualizan el precio base).',
   productsUpdateSchema.shape, wrap(productsUpdate));
 
 server.tool('b24_products_sections',
-  'Lista las secciones/categorías del catálogo de productos.',
+  'Lista las secciones/categorías del catálogo de productos (catalog.section.list).',
   productsSectionsSchema.shape, wrap(productsSections));
 
 // ─────────────────────────────────────────────────────────────────────────────
