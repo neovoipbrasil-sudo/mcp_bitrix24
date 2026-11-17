@@ -1,0 +1,9 @@
+# Só a integração MSN Talk → Bitrix24 (sem MCP, sem chatbot, sem Anthropic).
+FROM node:20-slim
+WORKDIR /app
+ENV NODE_ENV=production
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+COPY . .
+EXPOSE 3300
+CMD ["node", "src/msntalk/standalone.js"]
