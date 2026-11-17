@@ -4,3 +4,4 @@ docs
 README.md
 **/*.test.js
 vitest.config.js
+deploy
