@@ -22,6 +22,11 @@ export function createApp({
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
 
+  // Healthcheck para monitoramento (Uptime Kuma) e para o healthcheck do Docker.
+  app.get('/health', (req, res) => {
+    res.json({ status: 'ok' });
+  });
+
   const expectedToken = 'custom' + botConfig.botToken;
 
   app.post('/bitrix-events', (req, res) => {

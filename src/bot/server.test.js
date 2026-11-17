@@ -25,6 +25,15 @@ function eventBody(overrides = {}) {
   };
 }
 
+describe('GET /health', () => {
+  it('returns 200 with status ok', async () => {
+    const { app } = setup();
+    const res = await request(app).get('/health');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ status: 'ok' });
+  });
+});
+
 describe('POST /bitrix-events', () => {
   it('rejects requests with a missing or wrong application_token with 403', async () => {
     const { app, agentLoop } = setup();
