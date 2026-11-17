@@ -4,10 +4,10 @@ Os apps rodam em Docker **ao lado do 3CX**, sem mexer nele:
 
 ```
 Internet ─► nginx (já existe, é do 3CX) ─► arquivo próprio neovoip-apps.conf
-                                            ├─ app.neovoip.com.br        → 127.0.0.1:3001  appquilometragem
-                                            ├─ propostas.neovoip.com.br  → 127.0.0.1:3002  proposal-assistant
-                                            ├─ bot.neovoip.com.br        → 127.0.0.1:3300  bot Bitrix24 / MSN Talk
-                                            └─ status.neovoip.com.br     → 127.0.0.1:3010  Uptime Kuma (monitoramento)
+                                            ├─ connecmob.connectelecom.com.br          → 127.0.0.1:3001  appquilometragem
+                                            ├─ proposal-assistant.connectelecom.com.br → 127.0.0.1:3002  proposal-assistant
+                                            ├─ (depois) bot MSN Talk                    → 127.0.0.1:3300
+                                            └─ (depois) painel de monitoramento         → 127.0.0.1:3010  Uptime Kuma
 ```
 
 - Containers escutam **só em 127.0.0.1** — nenhuma porta nova aberta na internet.
@@ -21,12 +21,16 @@ Internet ─► nginx (já existe, é do 3CX) ─► arquivo próprio neovoip-ap
 2. Fazer fora do horário de atendimento.
 3. Descobrir o IPv4 da VPS: `curl -4 -s ifconfig.me`
 
-## 1. DNS (HostGator → Zona DNS de neovoip.com.br)
+## 1. DNS
 
-Criar 4 registros **A** apontando para o IPv4 da VPS:
-`app`, `propostas`, `bot`, `status`. (Se `app` já existir, editar o valor.)
+Os registros **A** de `connecmob.connectelecom.com.br` e `proposal-assistant.connectelecom.com.br`
+precisam apontar para o IPv4 da VPS. Conferir:
 
-Conferir depois de alguns minutos: `getent hosts app.neovoip.com.br`
+```bash
+getent ahosts connecmob.connectelecom.com.br; getent ahosts proposal-assistant.connectelecom.com.br; curl -4 -s ifconfig.me; echo
+```
+
+O bot (MSN Talk) e o painel de monitoramento ganham subdomínio numa etapa seguinte.
 
 ## 2. Conferir como o nginx do 3CX carrega configurações
 
@@ -67,8 +71,9 @@ done
 ```bash
 cd /opt/neovoip/mcp_bitrix24/deploy
 cp .env.example .env
-for f in env/*.example; do cp "$f" "${f%.example}"; done
-nano .env env/quilometragem.env env/propostas.env env/bot.env
+cp env/quilometragem.env.example env/quilometragem.env
+cp env/propostas.env.example env/propostas.env
+nano .env env/quilometragem.env env/propostas.env
 chmod 600 .env env/*.env
 ```
 
@@ -77,9 +82,9 @@ Cada arquivo diz de onde tirar cada valor.
 ## 6. Subir os containers
 
 ```bash
-docker compose up -d --build
-docker compose ps        # todos devem ficar "healthy" em ~1 min
-curl -s 127.0.0.1:3001/api/health; curl -s 127.0.0.1:3002/api/health; curl -s 127.0.0.1:3300/health
+docker compose up -d --build quilometragem propostas
+docker compose ps        # devem ficar "healthy" em ~1 min
+curl -s 127.0.0.1:3001/api/health; curl -s 127.0.0.1:3002/api/health
 ```
 
 ## 7. Publicar com HTTPS
@@ -91,7 +96,7 @@ cp nginx/neovoip-apps.conf  /etc/nginx/conf.d/neovoip-apps.conf
 nginx -t && systemctl reload nginx
 
 certbot certonly --webroot -w /var/www/certbot --cert-name neovoip-apps \
-  -d app.neovoip.com.br -d propostas.neovoip.com.br -d bot.neovoip.com.br -d status.neovoip.com.br \
+  -d connecmob.connectelecom.com.br -d proposal-assistant.connectelecom.com.br \
   --deploy-hook "systemctl reload nginx"
 ```
 
@@ -117,9 +122,9 @@ Abra `https://status.neovoip.com.br`, crie o usuário admin e cadastre:
 | Monitor | Tipo | Endereço |
 |---|---|---|
 | Quilometragem (interno) | HTTP | `http://quilometragem:3000/api/health` |
-| Quilometragem (público) | HTTP | `https://app.neovoip.com.br/api/health` |
+| Quilometragem (público) | HTTP | `https://connecmob.connectelecom.com.br/api/health` |
 | Propostas (interno) | HTTP | `http://propostas:3000/api/health` |
-| Propostas (público) | HTTP | `https://propostas.neovoip.com.br/api/health` |
+| Propostas (público) | HTTP | `https://proposal-assistant.connectelecom.com.br/api/health` |
 | Bot (interno) | HTTP | `http://bot:3300/health` |
 | Bot (público) | HTTP | `https://bot.neovoip.com.br/health` |
 | 3CX SIP | TCP | `host.docker.internal` porta `5060` |

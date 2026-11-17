@@ -54,7 +54,9 @@ services:
     <<: *defaults
     build:
       context: ..
-    env_file: env/bot.env
+    env_file:
+      - path: env/bot.env
+        required: false   # o bot entra numa etapa posterior
     ports: ["127.0.0.1:3300:3300"]
     volumes:
       - ./volumes/bot-data:/app/src/bot/data   # usuários do /reports, vínculos MSN Talk, auditoria
