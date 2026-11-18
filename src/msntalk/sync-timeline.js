@@ -1,3 +1,4 @@
+import { describeError } from '../utils/describe-error.js';
 import { timelineAdd, timelineCommentUpdate, timelinePin, crmUpdate, crmCreate } from '../tools/crm.js';
 import { findCrmEntity } from './find-crm-entity.js';
 
@@ -204,7 +205,7 @@ export async function postConversationToGroups({ groups, ticketId, lines, ticket
         try {
           await timelinePin({ id: comment_id, entity: group.entity, entity_id: entityId });
         } catch (err) {
-          console.error('msntalk: timelinePin failed', err);
+          console.error(`msntalk: timelinePin falhou: ${describeError(err)}`);
         }
       }
 

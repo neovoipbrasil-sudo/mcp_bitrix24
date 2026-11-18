@@ -103,6 +103,18 @@ describe('Bitrix24Client', () => {
     }
   });
 
+  it('retries when Bitrix24 drops a reused keep-alive connection (ECONNRESET / socket hang up)', async () => {
+    const client = new Bitrix24Client('https://portal.bitrix24.com.br/rest/1/abc/');
+    postMock
+      .mockRejectedValueOnce(Object.assign(new Error('socket hang up'), { code: 'ECONNRESET' }))
+      .mockResolvedValueOnce({ data: { result: 'ok-after-reset' } });
+
+    const result = await client.call('crm.lead.contact.items.get', { id: '6300' });
+
+    expect(result.result).toBe('ok-after-reset');
+    expect(postMock).toHaveBeenCalledTimes(2);
+  });
+
   it('paces requests using a custom minDelay when provided', async () => {
     const client = new Bitrix24Client('https://portal.bitrix24.com.br/rest/1/abc/', { minDelay: 1500 });
     expect(client.limiter.minDelay).toBe(1500);

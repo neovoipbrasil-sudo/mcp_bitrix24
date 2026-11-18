@@ -3,6 +3,11 @@ import { RateLimiter } from '../utils/rate-limiter.js';
 
 const MAX_RETRIES = 3;
 
+// Falhas de rede transitórias: o Bitrix24 às vezes fecha uma conexão
+// keep-alive reaproveitada ("socket hang up" / ECONNRESET), o que em produção
+// derrubava o ciclo inteiro da varredura de contatos adicionais.
+const TRANSIENT_NETWORK_CODES = new Set(['ECONNRESET', 'ETIMEDOUT', 'EPIPE', 'EAI_AGAIN', 'ECONNABORTED']);
+
 export class Bitrix24Client {
   constructor(webhookUrl, { minDelay = 500 } = {}) {
     this.webhookUrl = webhookUrl.endsWith('/') ? webhookUrl : webhookUrl + '/';
@@ -55,7 +60,7 @@ export class Bitrix24Client {
             retries += 1;
             continue;
           }
-          if (err.code === 'ECONNABORTED' && retries < MAX_RETRIES) {
+          if (TRANSIENT_NETWORK_CODES.has(err.code) && !err.response && retries < MAX_RETRIES) {
             const backoff = Math.pow(2, retries) * 1000;
             await new Promise(r => setTimeout(r, backoff));
             retries += 1;

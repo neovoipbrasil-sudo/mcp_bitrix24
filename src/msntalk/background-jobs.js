@@ -1,6 +1,7 @@
 import { Bitrix24Client } from '../bitrix24/client.js';
 import { refreshAdditionalContacts } from './refresh-additional-contacts.js';
 import { reconcilePending } from './reconcile-pending.js';
+import { describeError } from '../utils/describe-error.js';
 
 // Rotinas periódicas da integração MSN Talk (refresh do índice de contatos
 // adicionais e reconciliação das conversas pendentes). Usadas pelo bot
@@ -36,7 +37,7 @@ export function startMsnTalkBackgroundJobs({
     try {
       await refreshAdditionalContacts({ client: additionalContactsRefreshClient, index: additionalContactsIndex });
     } catch (err) {
-      console.error('msntalk: refreshAdditionalContacts failed', err);
+      console.error(`msntalk: refreshAdditionalContacts falhou (tenta de novo no próximo ciclo): ${describeError(err)}`);
     } finally {
       additionalContactsRefreshInFlight = false;
     }
@@ -66,7 +67,7 @@ export function startMsnTalkBackgroundJobs({
         auditLog,
       });
     } catch (err) {
-      console.error('msntalk: reconcilePending failed', err);
+      console.error(`msntalk: reconcilePending falhou (tenta de novo no próximo ciclo): ${describeError(err)}`);
     } finally {
       reconcilePendingInFlight = false;
     }
