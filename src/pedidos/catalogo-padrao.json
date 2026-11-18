@@ -1,0 +1,562 @@
+{
+  "versao": 1,
+  "regras": {
+    "descontoPercent": 50,
+    "fidelidades": [
+      12,
+      24,
+      36
+    ],
+    "vencimentos": [
+      1,
+      5,
+      10,
+      15,
+      20,
+      25,
+      28
+    ],
+    "instalacao": {
+      "remota": 50,
+      "presencial": 180
+    },
+    "cfop": {
+      "ddd": 61,
+      "noDdd": "5303",
+      "outros": "6303"
+    },
+    "minRamais": 3,
+    "limiteStandardSemGrupoCallCenter": 12,
+    "operadoras": [
+      "Vivo",
+      "Claro",
+      "TIM",
+      "Oi",
+      "Algar",
+      "Embratel"
+    ],
+    "chaveAcesso": ""
+  },
+  "tiposVox": [
+    {
+      "id": "full",
+      "nome": "Neo Vox Full Nuvem Ilimitado",
+      "categoria": "ilimitado",
+      "somenteRevenda": false,
+      "ativo": true
+    },
+    {
+      "id": "smart",
+      "nome": "Neo Vox Smart Nuvem Ilimitado",
+      "categoria": "ilimitado",
+      "somenteRevenda": false,
+      "ativo": true
+    },
+    {
+      "id": "partner",
+      "nome": "Neo Vox Full Nuvem Ilimitado Partner",
+      "categoria": "ilimitado",
+      "somenteRevenda": true,
+      "ativo": true
+    },
+    {
+      "id": "full-pos",
+      "nome": "Neo Vox Full Nuvem POS (Tarifado)",
+      "categoria": "pos",
+      "somenteRevenda": false,
+      "ativo": true
+    },
+    {
+      "id": "0800",
+      "nome": "Neo Vox Nuvem 0800 Tarifado",
+      "categoria": "pos",
+      "somenteRevenda": false,
+      "ativo": true
+    },
+    {
+      "id": "pre",
+      "nome": "Neo Vox Nuvem Pré (Recarga)",
+      "categoria": "pre",
+      "somenteRevenda": false,
+      "ativo": true
+    }
+  ],
+  "planosVox": [
+    {
+      "id": "full-1",
+      "tipo": "full",
+      "nome": "Neo Vox Full Nuvem Ilimitado 1",
+      "fidelidade": 12,
+      "minLinhas": 1,
+      "maxLinhas": 20,
+      "precoCheio": 179.8,
+      "ativo": true
+    },
+    {
+      "id": "full-2",
+      "tipo": "full",
+      "nome": "Neo Vox Full Nuvem Ilimitado 2",
+      "fidelidade": 24,
+      "minLinhas": 1,
+      "maxLinhas": 20,
+      "precoCheio": 151.8,
+      "ativo": true
+    },
+    {
+      "id": "full-3",
+      "tipo": "full",
+      "nome": "Neo Vox Full Nuvem Ilimitado 3",
+      "fidelidade": 36,
+      "minLinhas": 1,
+      "maxLinhas": 20,
+      "precoCheio": 119.8,
+      "ativo": true
+    },
+    {
+      "id": "full-4",
+      "tipo": "full",
+      "nome": "Neo Vox Full Nuvem Ilimitado 4",
+      "fidelidade": 12,
+      "minLinhas": 21,
+      "maxLinhas": null,
+      "precoCheio": 171.8,
+      "ativo": true
+    },
+    {
+      "id": "full-5",
+      "tipo": "full",
+      "nome": "Neo Vox Full Nuvem Ilimitado 5",
+      "fidelidade": 24,
+      "minLinhas": 21,
+      "maxLinhas": null,
+      "precoCheio": 141.8,
+      "ativo": true
+    },
+    {
+      "id": "full-6",
+      "tipo": "full",
+      "nome": "Neo Vox Full Nuvem Ilimitado 6",
+      "fidelidade": 36,
+      "minLinhas": 21,
+      "maxLinhas": null,
+      "precoCheio": 99.8,
+      "ativo": true
+    },
+    {
+      "id": "smart-1",
+      "tipo": "smart",
+      "nome": "Neo Vox Smart Nuvem Ilimitado 1",
+      "fidelidade": 12,
+      "minLinhas": 1,
+      "maxLinhas": 20,
+      "precoCheio": 179.8,
+      "ativo": true
+    },
+    {
+      "id": "smart-2",
+      "tipo": "smart",
+      "nome": "Neo Vox Smart Nuvem Ilimitado 2",
+      "fidelidade": 24,
+      "minLinhas": 1,
+      "maxLinhas": 20,
+      "precoCheio": 151.8,
+      "ativo": true
+    },
+    {
+      "id": "smart-3",
+      "tipo": "smart",
+      "nome": "Neo Vox Smart Nuvem Ilimitado 3",
+      "fidelidade": 36,
+      "minLinhas": 1,
+      "maxLinhas": 20,
+      "precoCheio": 119.8,
+      "ativo": true
+    },
+    {
+      "id": "smart-4",
+      "tipo": "smart",
+      "nome": "Neo Vox Smart Nuvem Ilimitado 4",
+      "fidelidade": 12,
+      "minLinhas": 21,
+      "maxLinhas": null,
+      "precoCheio": 171.8,
+      "ativo": true
+    },
+    {
+      "id": "smart-5",
+      "tipo": "smart",
+      "nome": "Neo Vox Smart Nuvem Ilimitado 5",
+      "fidelidade": 24,
+      "minLinhas": 21,
+      "maxLinhas": null,
+      "precoCheio": 141.8,
+      "ativo": true
+    },
+    {
+      "id": "smart-6",
+      "tipo": "smart",
+      "nome": "Neo Vox Smart Nuvem Ilimitado 6",
+      "fidelidade": 36,
+      "minLinhas": 21,
+      "maxLinhas": null,
+      "precoCheio": 99.8,
+      "ativo": true
+    },
+    {
+      "id": "partner-1",
+      "tipo": "partner",
+      "nome": "Neo Vox Full Nuvem Ilimitado Partner 1",
+      "fidelidade": 12,
+      "minLinhas": 1,
+      "maxLinhas": 20,
+      "precoCheio": 179.8,
+      "ativo": true
+    },
+    {
+      "id": "partner-2",
+      "tipo": "partner",
+      "nome": "Neo Vox Full Nuvem Ilimitado Partner 2",
+      "fidelidade": 24,
+      "minLinhas": 1,
+      "maxLinhas": 20,
+      "precoCheio": 151.8,
+      "ativo": true
+    },
+    {
+      "id": "partner-3",
+      "tipo": "partner",
+      "nome": "Neo Vox Full Nuvem Ilimitado Partner 3",
+      "fidelidade": 36,
+      "minLinhas": 1,
+      "maxLinhas": 20,
+      "precoCheio": 119.8,
+      "ativo": true
+    },
+    {
+      "id": "partner-4",
+      "tipo": "partner",
+      "nome": "Neo Vox Full Nuvem Ilimitado Partner 4",
+      "fidelidade": 12,
+      "minLinhas": 21,
+      "maxLinhas": null,
+      "precoCheio": 171.8,
+      "ativo": true
+    },
+    {
+      "id": "partner-5",
+      "tipo": "partner",
+      "nome": "Neo Vox Full Nuvem Ilimitado Partner 5",
+      "fidelidade": 24,
+      "minLinhas": 21,
+      "maxLinhas": null,
+      "precoCheio": 141.8,
+      "ativo": true
+    },
+    {
+      "id": "partner-6",
+      "tipo": "partner",
+      "nome": "Neo Vox Full Nuvem Ilimitado Partner 6",
+      "fidelidade": 36,
+      "minLinhas": 21,
+      "maxLinhas": null,
+      "precoCheio": 99.8,
+      "ativo": true
+    },
+    {
+      "id": "full-pos-1",
+      "tipo": "full-pos",
+      "nome": "Neo Vox Full Nuvem POS 1",
+      "fidelidade": 12,
+      "minLinhas": 1,
+      "maxLinhas": null,
+      "precoCheio": 59.8,
+      "ativo": true,
+      "tarifas": {
+        "fixoLocal": 0.079,
+        "fixoLDN": 0.099,
+        "movelLocal": 0.149,
+        "movelLDN": 0.239
+      }
+    },
+    {
+      "id": "full-pos-2",
+      "tipo": "full-pos",
+      "nome": "Neo Vox Full Nuvem POS 2",
+      "fidelidade": 24,
+      "minLinhas": 1,
+      "maxLinhas": null,
+      "precoCheio": 57.8,
+      "ativo": true,
+      "tarifas": {
+        "fixoLocal": 0.079,
+        "fixoLDN": 0.099,
+        "movelLocal": 0.149,
+        "movelLDN": 0.239
+      }
+    },
+    {
+      "id": "full-pos-3",
+      "tipo": "full-pos",
+      "nome": "Neo Vox Full Nuvem POS 3",
+      "fidelidade": 36,
+      "minLinhas": 1,
+      "maxLinhas": null,
+      "precoCheio": 55.8,
+      "ativo": true,
+      "tarifas": {
+        "fixoLocal": 0.079,
+        "fixoLDN": 0.099,
+        "movelLocal": 0.149,
+        "movelLDN": 0.239
+      }
+    },
+    {
+      "id": "0800",
+      "tipo": "0800",
+      "nome": "Neo Vox Nuvem 0800 Tarifado",
+      "fidelidade": 36,
+      "minLinhas": 1,
+      "maxLinhas": null,
+      "precoCheio": 219.8,
+      "ativo": true,
+      "tarifas": {
+        "fixoLocal": 0.21,
+        "fixoLDN": 0.49,
+        "movelLocal": 0.49,
+        "movelLDN": 0.49
+      }
+    },
+    {
+      "id": "pre-1",
+      "tipo": "pre",
+      "nome": "Neo Vox Nuvem Pré 1",
+      "fidelidade": null,
+      "minLinhas": 1,
+      "maxLinhas": null,
+      "precoCheio": 25,
+      "ativo": true,
+      "tarifas": {
+        "local": 0.061,
+        "ldn": 0.208,
+        "vc": 0.256
+      }
+    },
+    {
+      "id": "pre-2",
+      "tipo": "pre",
+      "nome": "Neo Vox Nuvem Pré 2",
+      "fidelidade": null,
+      "minLinhas": 1,
+      "maxLinhas": null,
+      "precoCheio": 50,
+      "ativo": true,
+      "tarifas": {
+        "local": 0.061,
+        "ldn": 0.178,
+        "vc": 0.238
+      }
+    },
+    {
+      "id": "pre-3",
+      "tipo": "pre",
+      "nome": "Neo Vox Nuvem Pré 3",
+      "fidelidade": null,
+      "minLinhas": 1,
+      "maxLinhas": null,
+      "precoCheio": 75,
+      "ativo": true,
+      "tarifas": {
+        "local": 0.061,
+        "ldn": 0.163,
+        "vc": 0.23
+      }
+    },
+    {
+      "id": "pre-4",
+      "tipo": "pre",
+      "nome": "Neo Vox Nuvem Pré 4",
+      "fidelidade": null,
+      "minLinhas": 1,
+      "maxLinhas": null,
+      "precoCheio": 150,
+      "ativo": true,
+      "tarifas": {
+        "local": 0.061,
+        "ldn": 0.148,
+        "vc": 0.221
+      }
+    },
+    {
+      "id": "pre-5",
+      "tipo": "pre",
+      "nome": "Neo Vox Nuvem Pré 5",
+      "fidelidade": null,
+      "minLinhas": 1,
+      "maxLinhas": null,
+      "precoCheio": 500,
+      "ativo": true,
+      "tarifas": {
+        "local": 0.061,
+        "ldn": 0.134,
+        "vc": 0.212
+      }
+    },
+    {
+      "id": "pre-6",
+      "tipo": "pre",
+      "nome": "Neo Vox Nuvem Pré 6",
+      "fidelidade": null,
+      "minLinhas": 1,
+      "maxLinhas": null,
+      "precoCheio": 1000,
+      "ativo": true,
+      "tarifas": {
+        "local": 0.061,
+        "ldn": 0.119,
+        "vc": 0.203
+      }
+    }
+  ],
+  "ativacaoPre": 25,
+  "numeroAdicional": {
+    "12": 6.5,
+    "24": 6.5,
+    "36": 12,
+    "semFidelidade": 6.5
+  },
+  "portabilidade": {
+    "precoPorNumero": 9.5,
+    "cobranca": "unica"
+  },
+  "licencasPhone": [
+    {
+      "id": "essentials",
+      "nome": "Licença Essentials (Ramal + URA)",
+      "precos": {
+        "12": 55.94,
+        "24": 39.94,
+        "36": 23.94
+      },
+      "incluiGravacao": false,
+      "callCenter": false,
+      "ativo": true
+    },
+    {
+      "id": "basic",
+      "nome": "Licença Basic (Ramal + URA + Gravação de Chamadas)",
+      "precos": {
+        "12": 71.94,
+        "24": 55.94,
+        "36": 39.94
+      },
+      "incluiGravacao": true,
+      "callCenter": false,
+      "ativo": true
+    },
+    {
+      "id": "standard",
+      "nome": "Licença Standard (Recursos do Basic + Call Center)",
+      "precos": {
+        "12": 87.94,
+        "24": 71.94,
+        "36": 55.94
+      },
+      "incluiGravacao": true,
+      "callCenter": true,
+      "ativo": true
+    }
+  ],
+  "gravacao": [
+    {
+      "id": "90d",
+      "nome": "90 dias (incluso nas licenças Basic e Standard)",
+      "preco": 0,
+      "ativo": true
+    },
+    {
+      "id": "1a",
+      "nome": "1 ano",
+      "preco": 7.97,
+      "ativo": true
+    },
+    {
+      "id": "2a",
+      "nome": "2 anos",
+      "preco": 11.97,
+      "ativo": true
+    },
+    {
+      "id": "5a",
+      "nome": "5 anos",
+      "preco": 19.97,
+      "ativo": true
+    }
+  ],
+  "discador": {
+    "preco": 239.97,
+    "ativo": true
+  },
+  "grupoCallCenter": {
+    "preco": 239.97,
+    "ativo": true
+  },
+  "ldi": [
+    {
+      "grupo": "América do Norte",
+      "regioes": "Estados Unidos, Canadá",
+      "fixo": "R$ 2,07",
+      "movel": "R$ 2,07"
+    },
+    {
+      "grupo": "América do Sul",
+      "regioes": "Argentina, Chile, Colômbia, México, Peru, Paraguai, Uruguai, Bolívia",
+      "fixo": "R$ 3,15 – R$ 3,32",
+      "movel": "R$ 3,32"
+    },
+    {
+      "grupo": "Europa Ocidental",
+      "regioes": "Alemanha, Holanda, Suécia, Bélgica, França, Itália, Reino Unido, Espanha, Suíça, Portugal, Áustria",
+      "fixo": "R$ 3,32 – R$ 7,14",
+      "movel": "R$ 7,14"
+    },
+    {
+      "grupo": "Europa Oriental e Balcãs",
+      "regioes": "Sérvia, Polônia, Hungria, Romênia, Eslováquia (demais países da Europa)",
+      "fixo": "R$ 4,43 – R$ 13,39",
+      "movel": "R$ 13,39"
+    },
+    {
+      "grupo": "Ásia",
+      "regioes": "Japão, China, Coreia do Sul, Índia, Filipinas (demais países da Ásia)",
+      "fixo": "R$ 7,15",
+      "movel": "R$ 7,15"
+    },
+    {
+      "grupo": "África",
+      "regioes": "África do Sul, Egito, Nigéria, Quênia (demais países da África)",
+      "fixo": "R$ 7,15",
+      "movel": "R$ 7,15"
+    },
+    {
+      "grupo": "Oceania",
+      "regioes": "Austrália, Nova Zelândia, Papua Nova Guiné (demais países da Oceania)",
+      "fixo": "R$ 7,15 – R$ 12,87",
+      "movel": "R$ 7,15 – R$ 12,87"
+    },
+    {
+      "grupo": "Médio Oriente",
+      "regioes": "Israel, Arábia Saudita, Emirados Árabes Unidos, Líbano (demais países do Oriente Médio)",
+      "fixo": "R$ 4,43",
+      "movel": "R$ 13,39"
+    },
+    {
+      "grupo": "Outros",
+      "regioes": "Ilhas do Pacífico (Nauru, Tonga etc.), satélites (Inmarsat, Globalstar etc.)",
+      "fixo": "R$ 12,87",
+      "movel": "R$ 12,87"
+    }
+  ],
+  "precosEspeciais": [],
+  "vendedores": [],
+  "revendas": []
+}

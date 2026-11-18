@@ -19,8 +19,10 @@ export function createApp({
   msntalkAdditionalContactsIndex,
 }) {
   const app = express();
-  app.use(express.urlencoded({ extended: true }));
-  app.use(express.json());
+  // O formulário de pedidos (/formulario) tem parsers próprios, com limite maior para os anexos.
+  const skipFormulario = (mw) => (req, res, next) => (req.path.startsWith('/formulario') ? next() : mw(req, res, next));
+  app.use(skipFormulario(express.urlencoded({ extended: true })));
+  app.use(skipFormulario(express.json()));
 
   const expectedToken = 'custom' + botConfig.botToken;
 

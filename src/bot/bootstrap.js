@@ -18,6 +18,9 @@ import { refreshAdditionalContacts } from '../msntalk/refresh-additional-contact
 import { reconcilePending } from '../msntalk/reconcile-pending.js';
 import { createReportUserStore } from '../reports/report-users.js';
 import { createReportsPanel } from '../reports/reports-panel.js';
+import { createPedidosRouter } from '../pedidos/router.js';
+import { createCatalogStore } from '../pedidos/catalog-store.js';
+import { createMailer } from '../pedidos/mailer.js';
 
 const PORT = process.env.BOT_PORT || 3300;
 
@@ -133,6 +136,17 @@ const app = createApp({
 const reportUserStore = createReportUserStore({ filePath: new URL('./data/report-users.json', import.meta.url).pathname });
 const reportsDir = process.env.REPORTS_DIR || new URL('./data/reports', import.meta.url).pathname;
 app.use('/reports', createReportsPanel({ userStore: reportUserStore, reportsDir }));
+
+// Formulário de pedidos para vendedores e revendas (/formulario) e painel do catálogo
+// (/formulario/admin, mesmo login de administrador do painel de relatórios).
+const pedidosDataDir = new URL('./data', import.meta.url).pathname;
+app.use('/formulario', createPedidosRouter({
+  catalogStore: createCatalogStore({ filePath: `${pedidosDataDir}/pedidos-catalogo.json` }),
+  bitrixClient,
+  mailer: createMailer(),
+  userStore: reportUserStore,
+  logFile: `${pedidosDataDir}/pedidos-enviados.jsonl`,
+}));
 
 app.listen(PORT, () => {
   console.log(`Bot Server escutando na porta ${PORT}`);
