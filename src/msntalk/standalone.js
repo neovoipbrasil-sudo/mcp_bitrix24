@@ -28,7 +28,16 @@ if (!msntalkWebhookSecret) {
     'ex.: https://<host>/msntalk-events/<MSNTALK_WEBHOOK_SECRET>) antes de subir o servidor.'
   );
 }
-const webhookUrl = resolveWebhook();
+const webhookUrl = resolveWebhook().trim();
+// Valida o webhook já na subida, com uma mensagem clara (sem imprimir o token):
+// um valor colado com aspas, espaços ou "<>" fazia toda chamada falhar com
+// ERR_INVALID_URL, só visível quando chegava a primeira mensagem.
+if (!/^https:\/\/[^\s/]+\/rest\/\d+\/[A-Za-z0-9]+\/?$/.test(webhookUrl)) {
+  throw new Error(
+    'B24_DEFAULT_WEBHOOK inválido. O formato esperado é https://SEU-PORTAL.bitrix24.com.br/rest/ID/CODIGO/ ' +
+    `(sem aspas, espaços ou "<>"). Valor atual: ${webhookUrl.length} caracteres, começando com ${JSON.stringify(webhookUrl.slice(0, 8))}.`
+  );
+}
 const msntalkTicketUrlTemplate = process.env.MSNTALK_TICKET_URL_TEMPLATE;
 
 const bitrixClient = new Bitrix24Client(webhookUrl);
