@@ -6,7 +6,6 @@
   "type": "module",
   "scripts": {
     "start": "node index.js",
-    "catalogo": "node catalogo/app/server.js",
     "test": "vitest run"
   },
   "keywords": [
