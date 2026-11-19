@@ -5,3 +5,4 @@ node_modules/
 src/bot/bot-config.json
 src/bot/data/
 /data/
+catalogo/data/
