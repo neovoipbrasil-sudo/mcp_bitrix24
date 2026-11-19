@@ -1,0 +1,10 @@
+# Serviço do formulário de pedidos (separado do bot). No Easypanel: Build = Dockerfile,
+# arquivo "Dockerfile.formulario", porta 3000, volume persistente em /app/data.
+FROM node:20-slim
+WORKDIR /app
+ENV NODE_ENV=production PORT=3000 DATA_DIR=/app/data
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+COPY . .
+EXPOSE 3000
+CMD ["node", "src/pedidos/server.js"]

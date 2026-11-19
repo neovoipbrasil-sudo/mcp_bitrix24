@@ -199,3 +199,10 @@ Sem acesso ao Easypanel (onde roda o bot). Opções em avaliação: recuperar o 
 - Premissas a confirmar: portabilidade cobrada uma vez (na adesão) — configurável no painel; ativação R$ 25/linha só nos planos Pré; inscrição municipal opcional.
 - E-mail: variáveis `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `PEDIDOS_EMAIL_COPIA` (opcional). Sem `SMTP_HOST`, o e-mail fica desligado.
 - Teste local sem Bitrix: `node src/pedidos/dev-server.js` (envio simulado; admin/teste1234).
+
+## Deploy no Easypanel (serviço próprio, 2026-11-19)
+O bot não existe como serviço no Easypanel, então o formulário roda como serviço separado:
+- Entrada `src/pedidos/server.js`; imagem `Dockerfile.formulario` (porta 3000, `DATA_DIR=/app/data`).
+- Rotas: `/formulario/`, `/formulario/admin`, `/reports` (login/troca de senha/usuários; 1º acesso admin/admin), `/saude`.
+- Variáveis: `B24_DEFAULT_WEBHOOK` (obrigatória); `SMTP_*` e `PEDIDOS_EMAIL_COPIA` (opcionais).
+- Volume persistente em `/app/data` (catálogo, usuários, histórico, pedidos enviados).
