@@ -93,6 +93,14 @@ describe('preços', () => {
     expect(c.vox.ativacao).toBe(50);
     expect(c.vox.cfop).toBe('6303');
   });
+  it('ativação de R$ 25 por linha no Pré e no Pós, não no Ilimitado', () => {
+    const pos = calcularPedido(catalogo, pedidoPJ({ produtos: 'vox', vox: { tipoId: 'full-pos', linhas: 4, ddd: '61', adicionais: { quer: false } } }));
+    expect(pos.vox.ativacao).toBe(100);
+    expect(pos.adesao).toBe(150); // 100 ativação + 50 instalação remota
+    expect(calcularPedido(catalogo, pedidoPJ()).vox.ativacao).toBe(0);
+    const antigo = { ...catalogo, ativacao: undefined, ativacaoPre: 25 };
+    expect(calcularPedido(antigo, pedidoPJ({ produtos: 'vox', vox: { tipoId: 'full-pos', linhas: 2, ddd: '61', adicionais: { quer: false } } })).vox.ativacao).toBe(50);
+  });
   it('trava de portabilidade e mínimo de ramais / Grupo Call Center', () => {
     const bloco = { modo: 'faixa', faixa: { inicio: '5561933330000', fim: '5561933330049' } };
     expect(contarNumerosPortabilidade(bloco)).toBe(50);

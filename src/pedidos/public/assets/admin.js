@@ -117,7 +117,9 @@ function regras() {
     ${lista('regras.operadoras', 'Operadoras (portabilidade)', 'Separadas por vírgula. "Outra" é sempre incluída.')}
   </div>
   <h3>Serviços adicionais</h3><div class="regras">
-    ${n('ativacaoPre', 'Ativação por linha – planos Pré (R$)')}
+    ${n('ativacao.pre', 'Ativação por linha – planos Pré (R$)')}
+    ${n('ativacao.pos', 'Ativação por linha – planos Pós/tarifados (R$)')}
+    ${n('ativacao.ilimitado', 'Ativação por linha – planos Ilimitados (R$)')}
     ${n('numeroAdicional.12', 'Número adicional – 12 meses (R$)')}
     ${n('numeroAdicional.24', 'Número adicional – 24 meses (R$)')}
     ${n('numeroAdicional.36', 'Número adicional – 36 meses (R$)')}

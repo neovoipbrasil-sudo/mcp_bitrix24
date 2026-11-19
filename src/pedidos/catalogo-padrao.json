@@ -417,7 +417,7 @@
       }
     }
   ],
-  "ativacaoPre": 25,
+  "ativacao": { "pre": 25, "pos": 25, "ilimitado": 0 },
   "numeroAdicional": {
     "12": 6.5,
     "24": 6.5,

@@ -196,7 +196,8 @@ Sem acesso ao Easypanel (onde roda o bot). Opções em avaliação: recuperar o 
   - Pedidos enviados registrados em `src/bot/data/pedidos-enviados.jsonl`.
 - Ligação entre cards do mesmo pedido: `ORIGINATOR_ID = formulario-pedidos`, `ORIGIN_ID = PED-AAAAMMDD-XXXXXX`, título "Pedido PED-… – <serviço> – <cliente>" e comentário na timeline com links para os outros cards.
 - Lead: `LEAD_ID` do negócio é somente leitura na API; o lead é marcado CONVERTED, ligado ao contato/empresa e recebe comentário com os links dos cards.
-- Premissas a confirmar: portabilidade cobrada uma vez (na adesão) — configurável no painel; ativação R$ 25/linha só nos planos Pré; inscrição municipal opcional.
+- CONFIRMADO (2026-11-19): portabilidade cobrada uma vez (na adesão), sem mensalidade; números adicionais são mensais; ativação R$ 25/linha nos planos Pré e Pós (Ilimitado não cobra) — `ativacao: { pre, pos, ilimitado }` no catálogo. Inscrição municipal opcional.
+- E-mail: conta da Neo VoIP no servidor próprio `mail.neovoip.com.br` (MX do domínio; portas 465/587 abertas) → `SMTP_HOST=mail.neovoip.com.br`, `SMTP_PORT=465`, `SMTP_USER`=e-mail completo da conta.
 - E-mail: variáveis `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `PEDIDOS_EMAIL_COPIA` (opcional). Sem `SMTP_HOST`, o e-mail fica desligado.
 - Teste local sem Bitrix: `node src/pedidos/dev-server.js` (envio simulado; admin/teste1234).
 
