@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "catalogo",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["catalogo/app/server.js"],
+      "port": 3400
+    },
+    {
+      "name": "formulario",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["src/pedidos/dev-server.js"],
+      "port": 3410
+    }
+  ]
+}
