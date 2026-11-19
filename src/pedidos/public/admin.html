@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Catálogo do Formulário</title>
+<link rel="stylesheet" href="/formulario/assets/form.css">
+<style>
+  .abas { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 16px; }
+  .abas button { background: var(--card); border: 1px solid var(--line); color: var(--ink-2); font-weight: 500; padding: 7px 12px; }
+  .abas button.ativa { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .caixa { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
+  table.ed { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  table.ed th { text-align: left; font-size: 12px; color: var(--ink-3); padding: 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  table.ed td { padding: 4px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  table.ed input, table.ed select { padding: 6px 8px; font-size: 13.5px; min-width: 70px; }
+  table.ed input[type=checkbox] { width: auto; min-width: 0; }
+  table.ed input[data-k="nome"], table.ed input[data-k="email"] { min-width: 260px; }
+  table.ed input[data-k="observacao"], table.ed input[data-k="responsavelNome"] { min-width: 180px; }
+  table.ed select { min-width: 190px; }
+  table.ed input[type=number] { width: 100px; }
+  table.ed tr.inativo td { opacity: .55; }
+  .barra { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 14px; }
+  .barra .status { font-size: 13px; color: var(--ink-2); }
+  .login { max-width: 380px; margin: 40px auto; }
+  .regras { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0 14px; }
+</style>
+</head>
+<body>
+<header class="topo"><div class="topo-in"><p class="marca">Formulário de Pedidos</p><h1>Catálogo: planos, preços, vendedores e revendas</h1></div></header>
+<main class="wrap" id="app"></main>
+<script type="module" src="/formulario/assets/admin.js"></script>
+</body>
+</html>

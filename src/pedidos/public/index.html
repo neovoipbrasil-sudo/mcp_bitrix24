@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Formulário de Pedidos</title>
+<link rel="stylesheet" href="/formulario/assets/form.css">
+</head>
+<body>
+<header class="topo">
+  <div class="topo-in">
+    <p class="marca">Connect Telecom · Neo VoIP</p>
+    <h1>Formulário de Pedidos</h1>
+  </div>
+</header>
+<main class="wrap">
+  <ol class="passos" id="passos" aria-label="Etapas do pedido"></ol>
+  <div class="grade">
+    <form id="form" novalidate autocomplete="off">
+      <section id="etapa" aria-live="polite"></section>
+      <div class="nav-botoes">
+        <button type="button" class="sec" id="voltar">Voltar</button>
+        <button type="button" class="pri" id="avancar">Próximo</button>
+      </div>
+    </form>
+    <aside class="painel" id="painel" aria-label="Resumo de valores"></aside>
+  </div>
+</main>
+<script type="module" src="/formulario/assets/form.js"></script>
+</body>
+</html>
