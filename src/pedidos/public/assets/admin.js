@@ -1,4 +1,5 @@
 import { brl } from '/formulario/shared/pricing.js';
+import { criarTelaPedidos, criarTelaUsuarios, criarTelaSenha } from '/formulario/assets/painel.js';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -8,7 +9,9 @@ function set(o, p, v) { const ks = p.split('.'); let x = o; ks.slice(0, -1).forE
 let cat = null;
 let historico = [];
 let usuario = '';
-let aba = 'vox';
+let aba = 'pedidos';
+let perfil = '';
+let telas = {};
 let alterado = false;
 let status = '';
 let produtosBitrix = null; // [{ id, nome, preco }] do catálogo do Bitrix24
@@ -51,7 +54,9 @@ const TABELAS = {
       { k: 'responsavelNome', t: 'Responsável no Bitrix', tipo: 'text' }, { k: 'bitrixUserId', t: 'ID no Bitrix', tipo: 'number' }, { k: 'ativo', t: 'Ativo', tipo: 'bool' }] },
 };
 
-const ABAS = [['vox', 'Planos Neo Vox'], ['tipos', 'Tipos de plano'], ['phone', 'Neo Phone'], ['gravacao', 'Gravação'], ['adicionais', 'Adicionais e regras'], ['especiais', 'Preços especiais'], ['vendedores', 'Vendedores'], ['revendas', 'Revendas'], ['historico', 'Histórico']];
+const ABAS_CATALOGO = [['vox', 'Planos Neo Vox'], ['tipos', 'Tipos de plano'], ['phone', 'Neo Phone'], ['gravacao', 'Gravação'], ['adicionais', 'Adicionais e regras'], ['especiais', 'Preços especiais'], ['vendedores', 'Vendedores'], ['revendas', 'Revendas'], ['historico', 'Histórico do catálogo']];
+const MODULOS = ['pedidos', 'usuarios', 'senha'];
+const abas = () => [['pedidos', 'Pedidos'], ...(perfil === 'admin' ? [...ABAS_CATALOGO, ['usuarios', 'Usuários']] : []), ['senha', 'Minha senha']];
 
 function seletorProduto(attr, v) {
   const lista = produtosBitrix || [];
@@ -166,14 +171,18 @@ function historicoHtml() {
 }
 
 function render() {
-  if (!cat) return;
-  const corpo = aba === 'adicionais' ? regras() : aba === 'historico' ? historicoHtml() : tabela(aba);
-  $('#app').innerHTML = `<div class="barra"><div class="abas">${ABAS.map(([id, t]) => `<button class="${aba === id ? 'ativa' : ''}" data-aba="${id}">${t}</button>`).join('')}</div>
-    <div><span class="status">${esc(status)}</span> <button class="pri" id="salvar" ${alterado ? '' : 'disabled'}>Salvar alterações</button> <button class="sec" id="sair">Sair (${esc(usuario)})</button></div></div>
-  <div class="caixa">${corpo}</div>`;
+  if (!perfil) return;
+  const modulo = MODULOS.includes(aba);
+  if (!modulo && !cat) return;
+  const corpo = modulo ? '' : aba === 'adicionais' ? regras() : aba === 'historico' ? historicoHtml() : tabela(aba);
+  const catalogoAberto = !modulo;
+  $('#app').innerHTML = `<div class="barra"><div class="abas">${abas().map(([id, t]) => `<button class="${aba === id ? 'ativa' : ''}" data-aba="${id}">${t}</button>`).join('')}</div>
+    <div><span class="status">${esc(catalogoAberto ? status : '')}</span> ${catalogoAberto ? `<button class="pri" id="salvar" ${alterado ? '' : 'disabled'}>Salvar alterações</button>` : ''} <button class="sec" id="sair">Sair (${esc(usuario)} · ${perfil === 'admin' ? 'administrador' : 'operador'})</button></div></div>
+  <div class="caixa" id="modulo">${corpo}</div>`;
+  if (modulo) telas[aba].montar($('#modulo'));
 }
 
-function marcar() { alterado = true; status = 'Alterações não salvas.'; const b = $('#salvar'); if (b) b.disabled = false; $('.status').textContent = status; }
+function marcar() { alterado = true; status = 'Alterações não salvas.'; const b = $('#salvar'); if (b) b.disabled = false; const st = $('.status'); if (st) st.textContent = status; }
 
 function lerValor(el) {
   const tipo = el.dataset.tipo || el.dataset.cfgTipo;
@@ -224,18 +233,24 @@ async function salvar() {
   render();
 }
 
-function login(erro = '') {
-  $('#app').innerHTML = `<div class="login caixa"><h2 class="titulo">Entrar</h2><p class="sub">Use o mesmo usuário de administrador do painel de relatórios.</p>
-  ${erro ? `<div class="aviso erro">${esc(erro)}</div>` : ''}
-  <form id="login"><div class="campo"><label>Usuário</label><input name="usuario" autocomplete="username" required></div>
-  <div class="campo"><label>Senha</label><input name="senha" type="password" autocomplete="current-password" required></div>
-  <button class="pri">Entrar</button></form></div>`;
+function login(erro = '', trocar = null) {
+  perfil = '';
+  $('#app').innerHTML = `<div class="login caixa"><h2 class="titulo">${trocar ? 'Defina sua senha' : 'Entrar'}</h2>
+  <p class="sub">${trocar ? 'Primeiro acesso ou senha redefinida: escolha uma senha nova (mínimo 8 caracteres).' : 'Painel de pedidos do formulário.'}</p>
+  ${erro ? `<div class="aviso ${trocar ? 'alerta' : 'erro'}">${esc(erro)}</div>` : ''}
+  <form id="login"><div class="campo"><label>Usuário</label><input name="usuario" autocomplete="username" required value="${esc(trocar?.usuario || '')}"></div>
+  <div class="campo"><label>Senha${trocar ? ' atual' : ''}</label><input name="senha" type="password" autocomplete="current-password" required></div>
+  ${trocar ? '<div class="campo"><label>Nova senha</label><input name="novaSenha" type="password" autocomplete="new-password" required minlength="8"></div><div class="campo"><label>Repita a nova senha</label><input name="novaSenha2" type="password" autocomplete="new-password" required></div>' : ''}
+  <button class="pri">${trocar ? 'Salvar senha e entrar' : 'Entrar'}</button></form></div>`;
   $('#login').addEventListener('submit', async (ev) => {
     ev.preventDefault();
     const f = new FormData(ev.target);
-    const r = await fetch('/formulario/admin/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ usuario: f.get('usuario'), senha: f.get('senha') }) });
+    if (trocar && f.get('novaSenha') !== f.get('novaSenha2')) return login('As duas senhas novas não são iguais.', { usuario: f.get('usuario') });
+    const corpo = { usuario: f.get('usuario'), senha: f.get('senha'), ...(trocar ? { novaSenha: f.get('novaSenha') } : {}) };
+    const r = await fetch('/formulario/admin/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(corpo) });
     const d = await r.json().catch(() => ({}));
-    if (!r.ok) return login(d.erro || 'Não foi possível entrar.');
+    if (r.status === 409 && d.trocarSenha) return login(d.erro, { usuario: f.get('usuario') });
+    if (!r.ok) return login(d.erro || 'Não foi possível entrar.', trocar);
     carregar();
   });
 }
@@ -253,18 +268,31 @@ async function carregarProdutos(atualizar = false) {
 }
 
 async function carregar() {
-  const r = await fetch('/formulario/admin/api/catalogo');
-  if (r.status === 401) return login();
-  const d = await r.json();
-  cat = d.catalogo; historico = d.historico; usuario = d.usuario;
+  const me = await fetch('/formulario/admin/api/me');
+  if (me.status === 401) return login();
+  const m = await me.json();
+  usuario = m.usuario;
+  perfil = m.perfil;
+  const sair = () => login('Sua sessão terminou. Entre de novo.');
+  telas = { pedidos: criarTelaPedidos({ perfil, aoSair: sair }), usuarios: criarTelaUsuarios({ usuarioAtual: usuario, aoSair: sair }), senha: criarTelaSenha() };
+  if (!abas().some(([id]) => id === aba)) aba = 'pedidos';
   render();
-  carregarProdutos();
+  if (perfil === 'admin') {
+    const r = await fetch('/formulario/admin/api/catalogo');
+    const d = await r.json();
+    cat = d.catalogo; historico = d.historico;
+    render();
+    carregarProdutos();
+  }
 }
 
 document.addEventListener('change', onChange);
 document.addEventListener('click', async (ev) => {
   const t = ev.target;
-  if (t.dataset.aba) { aba = t.dataset.aba; render(); }
+  if (t.dataset.aba) {
+    if (alterado && MODULOS.includes(t.dataset.aba) && !confirm('Há alterações do catálogo não salvas. Sair da aba mesmo assim? (elas continuam até você recarregar a página)')) return;
+    aba = t.dataset.aba; render();
+  }
   if (t.dataset.novo) { const d = TABELAS[t.dataset.novo]; get(cat, d.lista).push(d.novo()); marcar(); render(); }
   if (t.dataset.rem != null) { const d = TABELAS[aba]; get(cat, d.lista).splice(Number(t.dataset.rem), 1); marcar(); render(); }
   if (t.id === 'salvar') salvar();
@@ -276,7 +304,7 @@ document.addEventListener('click', async (ev) => {
     out.textContent = r.ok ? `Aceito pelo servidor de e-mail (${d.aceitos} aceito, ${d.recusados} recusado). Resposta: ${d.resposta}. Se não chegar em alguns minutos, olhe o spam e a caixa de saída/devoluções da conta de envio.` : `Falhou: ${d.erro || r.status}`;
   }
   if (t.id === 'atualizar-produtos') { produtosBitrix = null; render(); carregarProdutos(true); }
-  if (t.id === 'sair') { await fetch('/formulario/admin/sair', { method: 'POST' }); cat = null; login(); }
+  if (t.id === 'sair') { await fetch('/formulario/admin/sair', { method: 'POST' }); cat = null; alterado = false; login(); }
 });
 window.addEventListener('beforeunload', (ev) => { if (alterado) { ev.preventDefault(); ev.returnValue = ''; } });
 

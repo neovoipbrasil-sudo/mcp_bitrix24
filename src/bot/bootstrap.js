@@ -21,6 +21,7 @@ import { createReportsPanel } from '../reports/reports-panel.js';
 import { createPedidosRouter } from '../pedidos/router.js';
 import { createCatalogStore } from '../pedidos/catalog-store.js';
 import { createMailer } from '../pedidos/mailer.js';
+import { createPedidosStore } from '../pedidos/pedidos-store.js';
 
 const PORT = process.env.BOT_PORT || 3300;
 
@@ -145,7 +146,7 @@ app.use('/formulario', createPedidosRouter({
   bitrixClient,
   mailer: createMailer(),
   userStore: reportUserStore,
-  logFile: `${pedidosDataDir}/pedidos-enviados.jsonl`,
+  pedidosStore: createPedidosStore({ dir: `${pedidosDataDir}/pedidos` }),
 }));
 
 app.listen(PORT, () => {

@@ -6,6 +6,8 @@ const SCRYPT = { N: 2 ** 15, r: 8, p: 1, maxmem: 64 * 1024 * 1024 };
 const KEY_LEN = 64;
 export const MIN_PASSWORD_LENGTH = 8;
 const USERNAME_RE = /^[a-z0-9._-]{2,32}$/;
+// admin: tudo · viewer: só relatórios · operador: painel de pedidos do formulário (sem catálogo nem usuários)
+export const ROLES = ['admin', 'viewer', 'operador'];
 
 // Hash vazio usado quando o usuário não existe, para o login levar o mesmo
 // tempo e não revelar pelo tempo de resposta quais usuários estão cadastrados.
@@ -88,7 +90,7 @@ export function createReportUserStore({ filePath }) {
       if (!USERNAME_RE.test(name)) {
         throw new Error('Usuário inválido: use de 2 a 32 caracteres entre letras minúsculas, números, ".", "_" e "-".');
       }
-      if (!['admin', 'viewer'].includes(role)) throw new Error('Perfil inválido.');
+      if (!ROLES.includes(role)) throw new Error('Perfil inválido.');
       validatePassword(password);
       const data = load();
       if (data[name]) throw new Error(`O usuário "${name}" já existe.`);
@@ -120,6 +122,19 @@ export function createReportUserStore({ filePath }) {
       data[name].passwordHash = hashPassword(newPassword);
       data[name].mustChangePassword = true;
       persist(data);
+    },
+
+    // Troca o perfil (feito por um admin). Não deixa o sistema sem administrador.
+    setRole(username, role) {
+      const name = normalizeUsername(username);
+      if (!ROLES.includes(role)) throw new Error('Perfil inválido.');
+      const data = load();
+      if (!data[name]) throw new Error(`O usuário "${name}" não existe.`);
+      const admins = Object.values(data).filter((u) => u.role === 'admin');
+      if (data[name].role === 'admin' && role !== 'admin' && admins.length === 1) throw new Error('Não é possível tirar o perfil do último administrador.');
+      data[name].role = role;
+      persist(data);
+      return publicView(name, data[name]);
     },
 
     remove(username) {

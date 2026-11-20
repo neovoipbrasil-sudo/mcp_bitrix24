@@ -9,6 +9,8 @@ import { calcularPedido, resolverPlanoVox, contarNumerosPortabilidade, tiposVoxD
 import { validarPedido } from './shared/validate-order.js';
 import { createCatalogStore } from './catalog-store.js';
 import { createPedidosRouter } from './router.js';
+import { createPedidosStore } from './pedidos-store.js';
+import { createReportUserStore } from '../reports/report-users.js';
 import { enviarPedidoAoBitrix } from './bitrix-order.js';
 import { F } from './bitrix-fields.js';
 
@@ -187,16 +189,23 @@ describe('envio ao Bitrix', () => {
 });
 
 describe('rotas', () => {
-  function app({ enviar = vi.fn(async () => ({ pedidoId: 'PED-X', cards: [{ id: 1, tipo: 'vox', titulo: 'Neo Vox' }] })) } = {}) {
+  function app({ enviar = vi.fn(async ({ pedidoId, aoCriarCard }) => { const c = { id: 1, tipo: 'vox', titulo: 'Neo Vox' }; aoCriarCard(c); return { pedidoId, cards: [c] }; }) } = {}) {
     const dir = mkdtempSync(path.join(os.tmpdir(), 'pedidos-'));
     const catalogStore = createCatalogStore({ filePath: path.join(dir, 'cat.json') });
     catalogStore.save(catalogo, { usuario: 'teste' });
+    const userStore = createReportUserStore({ filePath: path.join(dir, 'users.json') });
+    const pedidosStore = createPedidosStore({ dir: path.join(dir, 'pedidos') });
     const a = express();
-    a.use('/formulario', createPedidosRouter({ catalogStore, bitrixClient: { portal: 'x' }, mailer: { send: async () => ({ skipped: true }) }, userStore: { get: () => null, authenticate: () => null }, enviar }));
-    return { a, enviar, catalogStore };
+    a.use('/formulario', createPedidosRouter({ catalogStore, pedidosStore, bitrixClient: { portal: 'x' }, mailer: { send: async () => ({ skipped: true }) }, userStore, enviar }));
+    return { a, enviar, catalogStore, userStore, pedidosStore };
   }
-  it('recusa pedido inválido (422) e aceita o válido uma única vez por envioId', async () => {
-    const { a, enviar } = app();
+  async function entrar(a, usuario, senha) {
+    const r = await request(a).post('/formulario/admin/login').send({ usuario, senha });
+    return { r, cookie: (r.headers['set-cookie'] || []).map((c) => c.split(';')[0]).join('; ') };
+  }
+
+  it('recusa pedido inválido (422), salva o válido com anexos e não duplica por envioId', async () => {
+    const { a, enviar, pedidosStore } = app();
     const ruim = await request(a).post('/formulario/api/pedidos').send({ envioId: 'abcdefgh123', pedido: { ...pedidoPJ(), produtos: '' } });
     expect(ruim.status).toBe(422);
     const ok1 = await request(a).post('/formulario/api/pedidos').send({ envioId: 'abcdefgh123', pedido: pedidoPJ() });
@@ -204,7 +213,57 @@ describe('rotas', () => {
     expect(ok1.status).toBe(200);
     expect(ok2.body.pedidoId).toBe(ok1.body.pedidoId);
     expect(enviar).toHaveBeenCalledTimes(1);
+    const salvo = pedidosStore.obter(ok1.body.pedidoId);
+    expect(salvo.bitrix.situacao).toBe('enviado');
+    expect(salvo.pedido.arquivos.documentos[0]).toMatchObject({ nome: 'doc.pdf', arquivo: '01-doc.pdf' });
+    expect(JSON.stringify(salvo)).not.toContain(arquivo[0].base64); // conteúdo fica no arquivo, não no JSON
+    expect(pedidosStore.pedidoComAnexos(salvo.id).arquivos.documentos[0].base64).toBe(arquivo[0].base64);
   });
+
+  it('com o Bitrix fora, o pedido fica salvo e o operador reenvia pelo painel', async () => {
+    let falhar = true;
+    const enviar = vi.fn(async ({ pedidoId }) => { if (falhar) throw new Error('Bitrix24 error [QUERY_LIMIT_EXCEEDED]'); return { pedidoId, cards: [{ id: 7, tipo: 'vox', titulo: 'Neo Vox' }] }; });
+    const { a, userStore } = app({ enviar });
+    const r = await request(a).post('/formulario/api/pedidos').send({ envioId: 'falha-0001', pedido: pedidoPJ() });
+    expect(r.status).toBe(200);
+    expect(r.body.bitrixFalhou).toBe(true);
+
+    userStore.create({ username: 'op', password: 'inicial123', role: 'operador' });
+    const primeiro = await entrar(a, 'op', 'inicial123');
+    expect(primeiro.r.status).toBe(409); // precisa trocar a senha
+    const troca = await request(a).post('/formulario/admin/login').send({ usuario: 'op', senha: 'inicial123', novaSenha: 'definitiva1' });
+    expect(troca.status).toBe(200);
+    const { cookie } = await entrar(a, 'op', 'definitiva1');
+
+    const lista = await request(a).get('/formulario/admin/api/pedidos').set('cookie', cookie);
+    expect(lista.body.pedidos[0]).toMatchObject({ id: r.body.pedidoId, bitrix: 'falhou', status: 'Novo' });
+    expect((await request(a).get('/formulario/admin/api/catalogo').set('cookie', cookie)).status).toBe(403); // operador não mexe no catálogo
+    expect((await request(a).get('/formulario/admin/api/usuarios').set('cookie', cookie)).status).toBe(403);
+
+    falhar = false;
+    const re = await request(a).post(`/formulario/admin/api/pedidos/${r.body.pedidoId}/reenviar`).set('cookie', cookie).send({});
+    expect(re.status).toBe(200);
+    expect((await request(a).post(`/formulario/admin/api/pedidos/${r.body.pedidoId}/reenviar`).set('cookie', cookie).send({})).status).toBe(409); // já enviado
+
+    const st = await request(a).patch(`/formulario/admin/api/pedidos/${r.body.pedidoId}`).set('cookie', cookie).send({ status: 'Em análise', observacao: 'Conferir contrato social' });
+    expect(st.body.pedido.status).toBe('Em análise');
+    expect(st.body.pedido.observacoes[0]).toMatchObject({ usuario: 'op', texto: 'Conferir contrato social' });
+    const anexo = await request(a).get(`/formulario/admin/api/pedidos/${r.body.pedidoId}/anexos/01-doc.pdf`).set('cookie', cookie);
+    expect(anexo.status).toBe(200);
+    expect((await request(a).get(`/formulario/admin/api/pedidos/${r.body.pedidoId}/anexos/..%2Fpedido.json`).set('cookie', cookie)).status).toBe(404);
+  });
+
+  it('admin cria usuário operador; sem login a API do painel recusa', async () => {
+    const { a, userStore } = app();
+    expect((await request(a).get('/formulario/admin/api/pedidos')).status).toBe(401);
+    userStore.changePassword('admin', 'admin', 'admin-forte1');
+    const { cookie } = await entrar(a, 'admin', 'admin-forte1');
+    const c = await request(a).post('/formulario/admin/api/usuarios').set('cookie', cookie).send({ usuario: 'maria', senha: 'temporaria1', perfil: 'operador' });
+    expect(c.status).toBe(200);
+    expect(c.body.usuarios.find((u) => u.username === 'maria')).toMatchObject({ role: 'operador', mustChangePassword: true });
+    expect((await request(a).delete('/formulario/admin/api/usuarios/admin').set('cookie', cookie)).status).toBe(400); // não remove a si mesmo
+  });
+
   it('com chave de acesso, a API exige o link', async () => {
     const { a, catalogStore } = app();
     const c = catalogStore.get();

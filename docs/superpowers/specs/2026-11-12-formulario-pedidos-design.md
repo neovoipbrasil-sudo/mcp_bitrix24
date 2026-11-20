@@ -220,3 +220,12 @@ O bot não existe como serviço no Easypanel, então o formulário roda como ser
 - Portabilidade do MESMO estado (UF) do endereço de instalação entra no card Neo Vox (título "Neo Vox + Portabilidade"): campos de portabilidade + linha de produto "Portabilidade de Números".
 - Cada OUTRO estado vira um card próprio ("Portabilidade GO (…)"); vários blocos do mesmo estado são juntados num card só (cidades, operadoras e números de todos; titular/técnico do 1º bloco; todas as faturas).
 - E-mail: o log do serviço registra, a cada pedido, o id da mensagem e a resposta do SMTP (sem endereços).
+
+## Painel de pedidos e usuários (2026-11-20)
+- Todo envio é SALVO antes de ir ao Bitrix (`src/pedidos/pedidos-store.js`): `DATA_DIR/pedidos/<PED-…>/pedido.json` + `anexos/`. Se o Bitrix falhar, o vendedor vê "pedido recebido e salvo" e o painel mostra "Falhou no Bitrix" com botão de reenvio (cards parciais de uma tentativa anterior exigem confirmação).
+- `/formulario/admin` virou o "Painel de Pedidos", com login próprio (troca de senha obrigatória no 1º acesso, no próprio painel) e perfis:
+  - **Administrador**: pedidos + catálogo + usuários.
+  - **Operador**: só pedidos (lista, filtros, detalhe, anexos, status, observações, reenviar ao Bitrix/e-mail, exportar CSV).
+- Status internos: Novo, Em análise, Contrato enviado, Concluído, Cancelado. Histórico registra quem fez o quê.
+- Exportação: CSV (separador ";", UTF-8 com BOM) da lista filtrada.
+- Perfil `operador` adicionado ao cadastro de usuários (`src/reports/report-users.js`), com `setRole` que não deixa o sistema sem administrador.

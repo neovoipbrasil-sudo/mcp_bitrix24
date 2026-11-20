@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Catálogo do Formulário</title>
+<title>Painel de Pedidos</title>
 <link rel="stylesheet" href="/formulario/assets/form.css">
 <style>
   .abas { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 16px; }
@@ -24,11 +24,22 @@
   .barra { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 14px; }
   .barra .status { font-size: 13px; color: var(--ink-2); }
   .login { max-width: 380px; margin: 40px auto; }
+  .filtros { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)) !important; }
+  table.pedidos tr.clicavel { cursor: pointer; }
+  table.pedidos tr.clicavel:hover td { background: var(--accent-2); }
+  .etiqueta { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); white-space: nowrap; }
+  .etiqueta.bom { color: var(--ok); border-color: var(--ok); }
+  .etiqueta.ruim { color: var(--err); border-color: var(--err); }
+  .grade-detalhe { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; }
+  @media (max-width: 900px) { .grade-detalhe { grid-template-columns: 1fr; } }
+  ul.obs { list-style: none; padding: 0; margin: 0 0 12px; font-size: 14px; }
+  ul.obs li { padding: 8px 0; border-bottom: 1px solid var(--line); }
+  td.acoes { white-space: nowrap; }
   .regras { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0 14px; }
 </style>
 </head>
 <body>
-<header class="topo"><div class="topo-in"><p class="marca">Formulário de Pedidos</p><h1>Catálogo: planos, preços, vendedores e revendas</h1></div></header>
+<header class="topo"><div class="topo-in"><p class="marca">Formulário de Pedidos</p><h1>Painel de Pedidos</h1></div></header>
 <main class="wrap" id="app"></main>
 <script type="module" src="/formulario/assets/admin.js"></script>
 </body>

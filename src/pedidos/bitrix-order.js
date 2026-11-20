@@ -393,7 +393,8 @@ export function titularEfetivo(bloco, pedido) {
 
 // ---------------------------------------------------------------- envio
 
-export async function enviarPedidoAoBitrix({ client, catalogo, pedido, calculo, pedidoId, resumoTexto, portalHost }) {
+// aoCriarCard(card) é chamado a cada negócio criado, para registrar cards parciais se algo falhar no meio.
+export async function enviarPedidoAoBitrix({ client, catalogo, pedido, calculo, pedidoId, resumoTexto, portalHost, aoCriarCard = () => {} }) {
   const o = pedido.origem;
   const origemInfo = (o.tipo === 'revenda' ? catalogo.revendas : catalogo.vendedores).find((x) => x.id === o.id);
   const assignedById = Number(origemInfo.bitrixUserId);
@@ -440,7 +441,9 @@ export async function enviarPedidoAoBitrix({ client, catalogo, pedido, calculo, 
       params: { REGISTER_SONET_EVENT: 'Y' },
     }));
     if (rows.length) await r(client, 'crm.deal.productrows.set', { id, rows });
-    cards.push({ id, tipo, titulo, url: portalHost ? `https://${portalHost}/crm/deal/details/${id}/` : null });
+    const card = { id, tipo, titulo, url: portalHost ? `https://${portalHost}/crm/deal/details/${id}/` : null };
+    cards.push(card);
+    aoCriarCard(card);
     return id;
   };
 

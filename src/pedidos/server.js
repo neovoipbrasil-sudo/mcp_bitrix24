@@ -1,8 +1,8 @@
 // Servidor próprio do formulário de pedidos (serviço separado do bot no Easypanel).
 // Precisa só de B24_DEFAULT_WEBHOOK; e-mail opcional (SMTP_*). Dados em DATA_DIR (volume persistente).
 //   /formulario/        formulário para vendedores e revendas
-//   /formulario/admin   catálogo (planos, preços, vendedores, revendas) — login de admin
-//   /reports            login, troca de senha e gestão de usuários (1º acesso: admin / admin)
+//   /formulario/admin   painel: pedidos enviados, catálogo e usuários (1º acesso: admin / admin)
+//   /reports            painel de relatórios (mesmos usuários)
 import express from 'express';
 import path from 'path';
 import { Bitrix24Client } from '../bitrix24/client.js';
@@ -12,6 +12,7 @@ import { createReportsPanel } from '../reports/reports-panel.js';
 import { createPedidosRouter } from './router.js';
 import { createCatalogStore } from './catalog-store.js';
 import { createMailer } from './mailer.js';
+import { createPedidosStore } from './pedidos-store.js';
 
 const PORT = Number(process.env.PORT || 3000);
 const DATA_DIR = process.env.DATA_DIR || path.resolve('data');
@@ -29,7 +30,7 @@ app.use('/formulario', createPedidosRouter({
   bitrixClient,
   mailer: createMailer(),
   userStore,
-  logFile: path.join(DATA_DIR, 'pedidos-enviados.jsonl'),
+  pedidosStore: createPedidosStore({ dir: path.join(DATA_DIR, 'pedidos') }),
 }));
 
 app.listen(PORT, () => {
