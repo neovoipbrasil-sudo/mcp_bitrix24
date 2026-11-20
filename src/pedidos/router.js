@@ -215,6 +215,26 @@ export function createPedidosRouter({ catalogStore, bitrixClient, mailer, userSt
     }
   });
 
+  // Envia um e-mail de teste e devolve a resposta do servidor SMTP (diagnóstico de entrega).
+  admin.post('/api/testar-email', express.json(), async (req, res) => {
+    const para = String(req.body?.para || '').trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(para)) return res.status(400).json({ erro: 'Informe um e-mail válido.' });
+    if (!mailer.enabled) return res.status(400).json({ erro: 'E-mail desligado: configure SMTP_HOST no Easypanel.' });
+    try {
+      const r = await mailer.send({
+        to: para,
+        subject: 'Teste do Formulário de Pedidos',
+        text: 'Este é um e-mail de teste do Formulário de Pedidos. Se você recebeu, o envio está funcionando.',
+        html: '<p style="font:14px Arial,sans-serif">Este é um e-mail de teste do <b>Formulário de Pedidos</b>. Se você recebeu, o envio está funcionando.</p>',
+      });
+      console.log(`formulario: e-mail de teste aceito pelo SMTP id=${r.messageId} resposta="${r.response}"`);
+      res.json({ ok: true, aceitos: r.accepted?.length ?? 0, recusados: r.rejected?.length ?? 0, resposta: r.response, id: r.messageId });
+    } catch (err) {
+      console.error('formulario: e-mail de teste falhou', err.message);
+      res.status(502).json({ erro: `O servidor de e-mail recusou: ${err.response || err.message}` });
+    }
+  });
+
   admin.get('/api/catalogo', (req, res) => res.json({ usuario: req.adminUser.username, catalogo: catalogStore.get(), historico: catalogStore.history() }));
   admin.put('/api/catalogo', express.json({ limit: '2mb' }), (req, res) => {
     try {

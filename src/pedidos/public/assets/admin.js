@@ -149,6 +149,11 @@ function regras() {
   <div class="regras">${[['numeroAdicional', 'Número adicional (DID/DDR)'], ['ativacao', 'Ativação de linhas'], ['portabilidade', 'Portabilidade'], ['discador', 'Discador automático'], ['grupoCallCenter', 'Grupo Call Center'], ['instalacaoRemota', 'Instalação remota'], ['instalacaoPresencial', 'Instalação presencial']]
     .map(([k, t]) => `<div class="campo"><label>${esc(t)}</label>${seletorProduto(`data-cfg="produtosBitrix.${k}" data-cfg-tipo="produto"`, get(cat, `produtosBitrix.${k}`))}</div>`).join('')}</div>
   <p><button class="mini" id="atualizar-produtos">Recarregar produtos do Bitrix</button> <span class="ajuda">${produtosBitrix ? `${produtosBitrix.length} produtos ativos carregados.` : 'Carregando produtos…'}</span></p>
+  <h3>Testar o envio de e-mail</h3>
+  <p class="ajuda">Envia um e-mail de teste pela caixa configurada no servidor e mostra a resposta do servidor de e-mail.</p>
+  <div class="linha"><div class="campo"><label>Enviar para</label><input id="email-teste" type="email" placeholder="nome@empresa.com.br"></div>
+  <div class="campo"><label>&nbsp;</label><button class="mini" id="enviar-teste">Enviar e-mail de teste</button></div></div>
+  <p class="ajuda" id="resultado-teste"></p>
   <h3>Acesso ao formulário</h3>
   ${t('regras.chaveAcesso', 'Chave de acesso', 'Se preenchida, o formulário só abre pelo link com a chave. Trocar a chave invalida o link antigo.')}
   <p class="ajuda">Link para enviar aos vendedores e revendas: <b>${esc(link)}</b></p>`;
@@ -263,6 +268,13 @@ document.addEventListener('click', async (ev) => {
   if (t.dataset.novo) { const d = TABELAS[t.dataset.novo]; get(cat, d.lista).push(d.novo()); marcar(); render(); }
   if (t.dataset.rem != null) { const d = TABELAS[aba]; get(cat, d.lista).splice(Number(t.dataset.rem), 1); marcar(); render(); }
   if (t.id === 'salvar') salvar();
+  if (t.id === 'enviar-teste') {
+    const out = $('#resultado-teste');
+    out.textContent = 'Enviando…';
+    const r = await fetch('/formulario/admin/api/testar-email', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ para: $('#email-teste').value }) });
+    const d = await r.json().catch(() => ({}));
+    out.textContent = r.ok ? `Aceito pelo servidor de e-mail (${d.aceitos} aceito, ${d.recusados} recusado). Resposta: ${d.resposta}. Se não chegar em alguns minutos, olhe o spam e a caixa de saída/devoluções da conta de envio.` : `Falhou: ${d.erro || r.status}`;
+  }
   if (t.id === 'atualizar-produtos') { produtosBitrix = null; render(); carregarProdutos(true); }
   if (t.id === 'sair') { await fetch('/formulario/admin/sair', { method: 'POST' }); cat = null; login(); }
 });
