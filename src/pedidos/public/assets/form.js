@@ -445,7 +445,7 @@ function renderPainel() {
   if (c.vox) linhas.push(['Neo Vox / mês', brl(c.vox.mensal)]);
   if (c.phone) linhas.push(['Neo Phone / mês', brl(c.phone.mensal)]);
   if (c.portabilidade) linhas.push([`Portabilidade (${c.portabilidade.numeros})`, brl(c.portabilidade.total)]);
-  if (c.vox?.ativacao) linhas.push(['Ativação (Pré)', brl(c.vox.ativacao)]);
+  if (c.vox?.ativacao) linhas.push(['Ativação', brl(c.vox.ativacao)]);
   if (c.instalacao != null) linhas.push(['Instalação', brl(c.instalacao)]);
   $('#painel').innerHTML = `<h2>Valores do pedido</h2>${linhas.length ? `<dl>${linhas.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${v}</dd>`).join('')}
     <dt class="total">Valor mensal</dt><dd class="total">${brl(c.mensal)}</dd>

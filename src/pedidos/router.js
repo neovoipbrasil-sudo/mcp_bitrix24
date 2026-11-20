@@ -189,6 +189,28 @@ export function createPedidosRouter({ catalogStore, bitrixClient, mailer, userSt
     req.adminUser = u;
     next();
   });
+  // Produtos ativos do catálogo do Bitrix24, para associar aos planos/serviços (cache de 10 min).
+  let cacheProdutos = null;
+  admin.get('/api/produtos-bitrix', async (req, res) => {
+    try {
+      if (!cacheProdutos || Date.now() - cacheProdutos.em > 10 * 60 * 1000 || req.query.atualizar) {
+        const lista = [];
+        let start = 0;
+        for (let pagina = 0; pagina < 40; pagina++) {
+          const r = await bitrixClient.call('crm.product.list', { filter: { ACTIVE: 'Y' }, select: ['ID', 'NAME', 'PRICE'], order: { NAME: 'ASC' }, start });
+          lista.push(...r.result.map((p) => ({ id: Number(p.ID), nome: p.NAME, preco: Number(p.PRICE) })));
+          if (r.next == null) break;
+          start = r.next;
+        }
+        cacheProdutos = { em: Date.now(), lista };
+      }
+      res.json({ produtos: cacheProdutos.lista });
+    } catch (err) {
+      console.error('formulario: listar produtos do Bitrix falhou', err.message);
+      res.status(502).json({ erro: 'Não foi possível listar os produtos do Bitrix24 agora.' });
+    }
+  });
+
   admin.get('/api/catalogo', (req, res) => res.json({ usuario: req.adminUser.username, catalogo: catalogStore.get(), historico: catalogStore.history() }));
   admin.put('/api/catalogo', express.json({ limit: '2mb' }), (req, res) => {
     try {

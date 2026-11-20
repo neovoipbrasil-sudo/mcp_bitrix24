@@ -196,6 +196,22 @@ Sem acesso ao Easypanel (onde roda o bot). Opções em avaliação: recuperar o 
   - Pedidos enviados registrados em `src/bot/data/pedidos-enviados.jsonl`.
 - Ligação entre cards do mesmo pedido: `ORIGINATOR_ID = formulario-pedidos`, `ORIGIN_ID = PED-AAAAMMDD-XXXXXX`, título "Pedido PED-… – <serviço> – <cliente>" e comentário na timeline com links para os outros cards.
 - Lead: `LEAD_ID` do negócio é somente leitura na API; o lead é marcado CONVERTED, ligado ao contato/empresa e recebe comentário com os links dos cards.
-- Premissas a confirmar: portabilidade cobrada uma vez (na adesão) — configurável no painel; ativação R$ 25/linha só nos planos Pré; inscrição municipal opcional.
+- CONFIRMADO (2026-11-19): portabilidade cobrada uma vez (na adesão), sem mensalidade; números adicionais são mensais; ativação R$ 25/linha nos planos Pré e Pós (Ilimitado não cobra) — `ativacao: { pre, pos, ilimitado }` no catálogo. Inscrição municipal opcional.
+- E-mail: conta da Neo VoIP no servidor próprio `mail.neovoip.com.br` (MX do domínio; portas 465/587 abertas) → `SMTP_HOST=mail.neovoip.com.br`, `SMTP_PORT=465`, `SMTP_USER=pedidos@neovoip.com.br` (caixa escolhida em 2026-11-19), `SMTP_FROM=Pedidos Neo VoIP <pedidos@neovoip.com.br>`.
 - E-mail: variáveis `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `PEDIDOS_EMAIL_COPIA` (opcional). Sem `SMTP_HOST`, o e-mail fica desligado.
 - Teste local sem Bitrix: `node src/pedidos/dev-server.js` (envio simulado; admin/teste1234).
+
+## Deploy no Easypanel (serviço próprio, 2026-11-19)
+O bot não existe como serviço no Easypanel, então o formulário roda como serviço separado:
+- Entrada `src/pedidos/server.js`; imagem `Dockerfile.formulario` (porta 3000, `DATA_DIR=/app/data`).
+- Rotas: `/formulario/`, `/formulario/admin`, `/reports` (login/troca de senha/usuários; 1º acesso admin/admin), `/saude`.
+- Variáveis: `B24_DEFAULT_WEBHOOK` (obrigatória); `SMTP_*` e `PEDIDOS_EMAIL_COPIA` (opcionais).
+- Volume persistente em `/app/data` (catálogo, usuários, histórico, pedidos enviados).
+
+## Linhas de produto nos cards (2026-11-20)
+- Cada card recebe linhas na aba Produtos (`crm.deal.productrows.set`, escopo `crm`), ligadas ao catálogo do Bitrix:
+  Neo Vox = plano × linhas (+ DID adicional, ativação, instalação); Neo Phone = licenças da fidelidade (+ gravação, discador, Grupo Call Center; instalação se não houver Neo Vox); Portabilidade = portabilidade × números.
+- PRICE = preço final do formulário (com desconto); DISCOUNT_SUM/RATE guardam o desconto. O preço do catálogo do Bitrix não é usado.
+- Valor do negócio (OPPORTUNITY) = soma das linhas.
+- Associação no catálogo do formulário: `planosVox[].bitrixProdutoId`, `licencasPhone[].bitrixProdutoIds{12,24,36}`, `gravacao[].bitrixProdutoId`, `produtosBitrix{numeroAdicional, ativacao, portabilidade, discador, grupoCallCenter, instalacaoRemota, instalacaoPresencial}`; editável no painel (lista os produtos ativos via `crm.product.list`).
+- Sem produto no Bitrix: Neo Phone Licença Basic 12 e 24 meses (entram só com nome e preço até serem criados).

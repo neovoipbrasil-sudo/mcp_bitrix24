@@ -93,6 +93,14 @@ describe('preços', () => {
     expect(c.vox.ativacao).toBe(50);
     expect(c.vox.cfop).toBe('6303');
   });
+  it('ativação de R$ 25 por linha no Pré e no Pós, não no Ilimitado', () => {
+    const pos = calcularPedido(catalogo, pedidoPJ({ produtos: 'vox', vox: { tipoId: 'full-pos', linhas: 4, ddd: '61', adicionais: { quer: false } } }));
+    expect(pos.vox.ativacao).toBe(100);
+    expect(pos.adesao).toBe(150); // 100 ativação + 50 instalação remota
+    expect(calcularPedido(catalogo, pedidoPJ()).vox.ativacao).toBe(0);
+    const antigo = { ...catalogo, ativacao: undefined, ativacaoPre: 25 };
+    expect(calcularPedido(antigo, pedidoPJ({ produtos: 'vox', vox: { tipoId: 'full-pos', linhas: 2, ddd: '61', adicionais: { quer: false } } })).vox.ativacao).toBe(50);
+  });
   it('trava de portabilidade e mínimo de ramais / Grupo Call Center', () => {
     const bloco = { modo: 'faixa', faixa: { inicio: '5561933330000', fim: '5561933330049' } };
     expect(contarNumerosPortabilidade(bloco)).toBe(50);
@@ -144,6 +152,18 @@ describe('envio ao Bitrix', () => {
     expect(deals[2][F.port.numeroUnico]).toBe('5561933330000');
     expect(deals[3][F.port.uf]).toBe('GO');
     expect(calls.some(([m]) => m === 'crm.company.add')).toBe(true);
+    // Linhas de produto ligadas ao catálogo do Bitrix, com o preço do formulário
+    const rows = calls.filter(([m]) => m === 'crm.deal.productrows.set').map(([, p]) => p.rows);
+    expect(rows).toHaveLength(4);
+    const [vox, phone, port] = rows;
+    expect(vox[0]).toMatchObject({ PRODUCT_ID: 704, QUANTITY: 30, PRICE: 70.9, DISCOUNT_SUM: 70.9, DISCOUNT_RATE: 50 });
+    expect(vox.find((r) => r.PRODUCT_ID === 134)).toMatchObject({ QUANTITY: 2, PRICE: 6.5 });
+    expect(vox.find((r) => r.PRODUCT_ID === 420)).toMatchObject({ PRICE: 50 }); // instalação remota só no card Neo Vox
+    expect(phone.find((r) => r.PRODUCT_ID === 420)).toBeUndefined();
+    expect(phone.find((r) => r.PRODUCT_ID === 752)).toMatchObject({ QUANTITY: 2, PRICE: 19.97 }); // Essentials 24m
+    expect(phone.find((r) => r.PRODUCT_NAME.includes('Basic'))).toMatchObject({ PRODUCT_ID: 0, PRICE: 27.97 }); // sem produto no Bitrix
+    expect(port[0]).toMatchObject({ PRODUCT_ID: 130, QUANTITY: 1, PRICE: 9.5 });
+    expect(deals[0].OPPORTUNITY).toBe(Math.round((30 * 70.9 + 2 * 6.5 + 50) * 100) / 100);
   });
 });
 

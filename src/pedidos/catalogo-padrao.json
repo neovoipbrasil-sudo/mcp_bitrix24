@@ -90,7 +90,8 @@
       "minLinhas": 1,
       "maxLinhas": 20,
       "precoCheio": 179.8,
-      "ativo": true
+      "ativo": true,
+      "bitrixProdutoId": 688
     },
     {
       "id": "full-2",
@@ -100,7 +101,8 @@
       "minLinhas": 1,
       "maxLinhas": 20,
       "precoCheio": 151.8,
-      "ativo": true
+      "ativo": true,
+      "bitrixProdutoId": 692
     },
     {
       "id": "full-3",
@@ -110,7 +112,8 @@
       "minLinhas": 1,
       "maxLinhas": 20,
       "precoCheio": 119.8,
-      "ativo": true
+      "ativo": true,
+      "bitrixProdutoId": 696
     },
     {
       "id": "full-4",
@@ -120,7 +123,8 @@
       "minLinhas": 21,
       "maxLinhas": null,
       "precoCheio": 171.8,
-      "ativo": true
+      "ativo": true,
+      "bitrixProdutoId": 700
     },
     {
       "id": "full-5",
@@ -130,7 +134,8 @@
       "minLinhas": 21,
       "maxLinhas": null,
       "precoCheio": 141.8,
-      "ativo": true
+      "ativo": true,
+      "bitrixProdutoId": 704
     },
     {
       "id": "full-6",
@@ -140,7 +145,8 @@
       "minLinhas": 21,
       "maxLinhas": null,
       "precoCheio": 99.8,
-      "ativo": true
+      "ativo": true,
+      "bitrixProdutoId": 708
     },
     {
       "id": "smart-1",
@@ -150,7 +156,8 @@
       "minLinhas": 1,
       "maxLinhas": 20,
       "precoCheio": 179.8,
-      "ativo": true
+      "ativo": true,
+      "bitrixProdutoId": 712
     },
     {
       "id": "smart-2",
@@ -160,7 +167,8 @@
       "minLinhas": 1,
       "maxLinhas": 20,
       "precoCheio": 151.8,
-      "ativo": true
+      "ativo": true,
+      "bitrixProdutoId": 716
     },
     {
       "id": "smart-3",
@@ -170,7 +178,8 @@
       "minLinhas": 1,
       "maxLinhas": 20,
       "precoCheio": 119.8,
-      "ativo": true
+      "ativo": true,
+      "bitrixProdutoId": 720
     },
     {
       "id": "smart-4",
@@ -180,7 +189,8 @@
       "minLinhas": 21,
       "maxLinhas": null,
       "precoCheio": 171.8,
-      "ativo": true
+      "ativo": true,
+      "bitrixProdutoId": 724
     },
     {
       "id": "smart-5",
@@ -190,7 +200,8 @@
       "minLinhas": 21,
       "maxLinhas": null,
       "precoCheio": 141.8,
-      "ativo": true
+      "ativo": true,
+      "bitrixProdutoId": 728
     },
     {
       "id": "smart-6",
@@ -200,7 +211,8 @@
       "minLinhas": 21,
       "maxLinhas": null,
       "precoCheio": 99.8,
-      "ativo": true
+      "ativo": true,
+      "bitrixProdutoId": 732
     },
     {
       "id": "partner-1",
@@ -210,7 +222,8 @@
       "minLinhas": 1,
       "maxLinhas": 20,
       "precoCheio": 179.8,
-      "ativo": true
+      "ativo": true,
+      "bitrixProdutoId": 312
     },
     {
       "id": "partner-2",
@@ -220,7 +233,8 @@
       "minLinhas": 1,
       "maxLinhas": 20,
       "precoCheio": 151.8,
-      "ativo": true
+      "ativo": true,
+      "bitrixProdutoId": 328
     },
     {
       "id": "partner-3",
@@ -230,7 +244,8 @@
       "minLinhas": 1,
       "maxLinhas": 20,
       "precoCheio": 119.8,
-      "ativo": true
+      "ativo": true,
+      "bitrixProdutoId": 336
     },
     {
       "id": "partner-4",
@@ -240,7 +255,8 @@
       "minLinhas": 21,
       "maxLinhas": null,
       "precoCheio": 171.8,
-      "ativo": true
+      "ativo": true,
+      "bitrixProdutoId": 344
     },
     {
       "id": "partner-5",
@@ -250,7 +266,8 @@
       "minLinhas": 21,
       "maxLinhas": null,
       "precoCheio": 141.8,
-      "ativo": true
+      "ativo": true,
+      "bitrixProdutoId": 352
     },
     {
       "id": "partner-6",
@@ -260,7 +277,8 @@
       "minLinhas": 21,
       "maxLinhas": null,
       "precoCheio": 99.8,
-      "ativo": true
+      "ativo": true,
+      "bitrixProdutoId": 360
     },
     {
       "id": "full-pos-1",
@@ -276,7 +294,8 @@
         "fixoLDN": 0.099,
         "movelLocal": 0.149,
         "movelLDN": 0.239
-      }
+      },
+      "bitrixProdutoId": 94
     },
     {
       "id": "full-pos-2",
@@ -292,7 +311,8 @@
         "fixoLDN": 0.099,
         "movelLocal": 0.149,
         "movelLDN": 0.239
-      }
+      },
+      "bitrixProdutoId": 98
     },
     {
       "id": "full-pos-3",
@@ -308,7 +328,8 @@
         "fixoLDN": 0.099,
         "movelLocal": 0.149,
         "movelLDN": 0.239
-      }
+      },
+      "bitrixProdutoId": 102
     },
     {
       "id": "0800",
@@ -324,7 +345,8 @@
         "fixoLDN": 0.49,
         "movelLocal": 0.49,
         "movelLDN": 0.49
-      }
+      },
+      "bitrixProdutoId": 416
     },
     {
       "id": "pre-1",
@@ -339,7 +361,8 @@
         "local": 0.061,
         "ldn": 0.208,
         "vc": 0.256
-      }
+      },
+      "bitrixProdutoId": 266
     },
     {
       "id": "pre-2",
@@ -354,7 +377,8 @@
         "local": 0.061,
         "ldn": 0.178,
         "vc": 0.238
-      }
+      },
+      "bitrixProdutoId": 270
     },
     {
       "id": "pre-3",
@@ -369,7 +393,8 @@
         "local": 0.061,
         "ldn": 0.163,
         "vc": 0.23
-      }
+      },
+      "bitrixProdutoId": 274
     },
     {
       "id": "pre-4",
@@ -384,7 +409,8 @@
         "local": 0.061,
         "ldn": 0.148,
         "vc": 0.221
-      }
+      },
+      "bitrixProdutoId": 278
     },
     {
       "id": "pre-5",
@@ -399,7 +425,8 @@
         "local": 0.061,
         "ldn": 0.134,
         "vc": 0.212
-      }
+      },
+      "bitrixProdutoId": 282
     },
     {
       "id": "pre-6",
@@ -414,10 +441,15 @@
         "local": 0.061,
         "ldn": 0.119,
         "vc": 0.203
-      }
+      },
+      "bitrixProdutoId": 286
     }
   ],
-  "ativacaoPre": 25,
+  "ativacao": {
+    "pre": 25,
+    "pos": 25,
+    "ilimitado": 0
+  },
   "numeroAdicional": {
     "12": 6.5,
     "24": 6.5,
@@ -439,7 +471,12 @@
       },
       "incluiGravacao": false,
       "callCenter": false,
-      "ativo": true
+      "ativo": true,
+      "bitrixProdutoIds": {
+        "12": 816,
+        "24": 752,
+        "36": 820
+      }
     },
     {
       "id": "basic",
@@ -451,7 +488,12 @@
       },
       "incluiGravacao": true,
       "callCenter": false,
-      "ativo": true
+      "ativo": true,
+      "bitrixProdutoIds": {
+        "12": null,
+        "24": null,
+        "36": 766
+      }
     },
     {
       "id": "standard",
@@ -463,7 +505,12 @@
       },
       "incluiGravacao": true,
       "callCenter": true,
-      "ativo": true
+      "ativo": true,
+      "bitrixProdutoIds": {
+        "12": 914,
+        "24": 918,
+        "36": 748
+      }
     }
   ],
   "gravacao": [
@@ -471,25 +518,29 @@
       "id": "90d",
       "nome": "90 dias (incluso nas licenças Basic e Standard)",
       "preco": 0,
-      "ativo": true
+      "ativo": true,
+      "bitrixProdutoId": null
     },
     {
       "id": "1a",
       "nome": "1 ano",
       "preco": 7.97,
-      "ativo": true
+      "ativo": true,
+      "bitrixProdutoId": 166
     },
     {
       "id": "2a",
       "nome": "2 anos",
       "preco": 11.97,
-      "ativo": true
+      "ativo": true,
+      "bitrixProdutoId": 320
     },
     {
       "id": "5a",
       "nome": "5 anos",
       "preco": 19.97,
-      "ativo": true
+      "ativo": true,
+      "bitrixProdutoId": 324
     }
   ],
   "discador": {
@@ -558,5 +609,14 @@
   ],
   "precosEspeciais": [],
   "vendedores": [],
-  "revendas": []
+  "revendas": [],
+  "produtosBitrix": {
+    "numeroAdicional": 134,
+    "ativacao": 890,
+    "portabilidade": 130,
+    "discador": 178,
+    "grupoCallCenter": 174,
+    "instalacaoRemota": 420,
+    "instalacaoPresencial": 424
+  }
 }

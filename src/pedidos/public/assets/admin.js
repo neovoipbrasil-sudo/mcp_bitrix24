@@ -11,6 +11,8 @@ let usuario = '';
 let aba = 'vox';
 let alterado = false;
 let status = '';
+let produtosBitrix = null; // [{ id, nome, preco }] do catálogo do Bitrix24
+const produtoCol = (k, t = 'Produto no Bitrix') => ({ k, t, tipo: 'produto' });
 
 const tiposOpcoes = () => cat.tiposVox.map((t) => ({ valor: t.id, texto: t.nome }));
 
@@ -29,12 +31,13 @@ const TABELAS = {
       { k: 'tarifas.fixoLocal', t: 'Fixo local', tipo: 'number', opcional: true }, { k: 'tarifas.fixoLDN', t: 'Fixo LDN', tipo: 'number', opcional: true },
       { k: 'tarifas.movelLocal', t: 'Móvel local', tipo: 'number', opcional: true }, { k: 'tarifas.movelLDN', t: 'Móvel LDN', tipo: 'number', opcional: true },
       { k: 'tarifas.local', t: 'Pré: local', tipo: 'number', opcional: true }, { k: 'tarifas.ldn', t: 'Pré: LDN', tipo: 'number', opcional: true }, { k: 'tarifas.vc', t: 'Pré: VC', tipo: 'number', opcional: true },
-      { k: 'ativo', t: 'Ativo', tipo: 'bool' }] },
+      produtoCol('bitrixProdutoId'), { k: 'ativo', t: 'Ativo', tipo: 'bool' }] },
   phone: { titulo: 'Licenças Neo Phone (preço cheio por ramal)', lista: 'licencasPhone', novo: () => ({ id: '', nome: '', precos: { 12: 0, 24: 0, 36: 0 }, incluiGravacao: false, callCenter: false, ativo: true }),
     colunas: [{ k: 'id', t: 'Código', tipo: 'text' }, { k: 'nome', t: 'Nome', tipo: 'text' }, { k: 'precos.12', t: '12 meses', tipo: 'number' }, { k: 'precos.24', t: '24 meses', tipo: 'number' }, { k: 'precos.36', t: '36 meses', tipo: 'number' },
-      { k: 'incluiGravacao', t: 'Inclui gravação 90 dias', tipo: 'bool' }, { k: 'callCenter', t: 'Call center (conta p/ Grupo CC)', tipo: 'bool' }, { k: 'ativo', t: 'Ativo', tipo: 'bool' }] },
+      { k: 'incluiGravacao', t: 'Inclui gravação 90 dias', tipo: 'bool' }, { k: 'callCenter', t: 'Call center (conta p/ Grupo CC)', tipo: 'bool' },
+      produtoCol('bitrixProdutoIds.12', 'Produto Bitrix 12m'), produtoCol('bitrixProdutoIds.24', 'Produto Bitrix 24m'), produtoCol('bitrixProdutoIds.36', 'Produto Bitrix 36m'), { k: 'ativo', t: 'Ativo', tipo: 'bool' }] },
   gravacao: { titulo: 'Pacotes de gravação de chamadas', lista: 'gravacao', novo: () => ({ id: '', nome: '', preco: 0, ativo: true }),
-    colunas: [{ k: 'id', t: 'Código', tipo: 'text' }, { k: 'nome', t: 'Nome', tipo: 'text' }, { k: 'preco', t: 'Preço por pacote (R$)', tipo: 'number' }, { k: 'ativo', t: 'Ativo', tipo: 'bool' }] },
+    colunas: [{ k: 'id', t: 'Código', tipo: 'text' }, { k: 'nome', t: 'Nome', tipo: 'text' }, { k: 'preco', t: 'Preço por pacote (R$)', tipo: 'number' }, produtoCol('bitrixProdutoId'), { k: 'ativo', t: 'Ativo', tipo: 'bool' }] },
   especiais: { titulo: 'Preços especiais por revenda', lista: 'precosEspeciais', novo: () => ({ revendaCnpj: '', planoId: '', preco: 0, observacao: '' }),
     ajuda: 'Substitui o preço cheio do plano quando o pedido vem desta revenda.',
     colunas: [{ k: 'revendaCnpj', t: 'Revenda', tipo: 'select', opcoes: () => cat.revendas.map((r) => ({ valor: r.cnpj, texto: r.nome })) },
@@ -50,11 +53,21 @@ const TABELAS = {
 
 const ABAS = [['vox', 'Planos Neo Vox'], ['tipos', 'Tipos de plano'], ['phone', 'Neo Phone'], ['gravacao', 'Gravação'], ['adicionais', 'Adicionais e regras'], ['especiais', 'Preços especiais'], ['vendedores', 'Vendedores'], ['revendas', 'Revendas'], ['historico', 'Histórico']];
 
+function seletorProduto(attr, v) {
+  const lista = produtosBitrix || [];
+  const atual = Number(v) || '';
+  const conhecido = !atual || lista.some((p) => p.id === atual);
+  return `<select ${attr} data-produto="1"><option value="">— sem produto (só nome e preço) —</option>
+    ${conhecido ? '' : `<option value="${atual}" selected>#${atual} (não encontrado/inativo)</option>`}
+    ${lista.map((p) => `<option value="${p.id}" ${p.id === atual ? 'selected' : ''}>${esc(p.nome)} (#${p.id})</option>`).join('')}</select>`;
+}
+
 function celula(c, row, i) {
   const v = get(row, c.k);
   const attr = `data-i="${i}" data-k="${c.k}" data-tipo="${c.tipo}" ${c.vazioNull || c.opcional ? 'data-null="1"' : ''}`;
   if (c.tipo === 'bool') return `<input type="checkbox" ${attr} ${v ? 'checked' : ''}>`;
   if (c.tipo === 'select') return `<select ${attr}>${c.opcoes().map((o) => `<option value="${esc(o.valor)}" ${String(o.valor) === String(v) ? 'selected' : ''}>${esc(o.texto)}</option>`).join('')}</select>`;
+  if (c.tipo === 'produto') return seletorProduto(attr, v);
   if (c.tipo === 'calc') return `<span>${esc(c.calc(row))}</span>`;
   return `<input ${attr} type="${c.tipo === 'number' ? 'number' : 'text'}" step="any" value="${esc(v ?? '')}">`;
 }
@@ -117,7 +130,9 @@ function regras() {
     ${lista('regras.operadoras', 'Operadoras (portabilidade)', 'Separadas por vírgula. "Outra" é sempre incluída.')}
   </div>
   <h3>Serviços adicionais</h3><div class="regras">
-    ${n('ativacaoPre', 'Ativação por linha – planos Pré (R$)')}
+    ${n('ativacao.pre', 'Ativação por linha – planos Pré (R$)')}
+    ${n('ativacao.pos', 'Ativação por linha – planos Pós/tarifados (R$)')}
+    ${n('ativacao.ilimitado', 'Ativação por linha – planos Ilimitados (R$)')}
     ${n('numeroAdicional.12', 'Número adicional – 12 meses (R$)')}
     ${n('numeroAdicional.24', 'Número adicional – 24 meses (R$)')}
     ${n('numeroAdicional.36', 'Número adicional – 36 meses (R$)')}
@@ -129,6 +144,11 @@ function regras() {
   <div class="campo"><label>Portabilidade é cobrada</label><select data-cfg="portabilidade.cobranca" data-cfg-tipo="text">
     <option value="unica" ${cat.portabilidade.cobranca === 'unica' ? 'selected' : ''}>Uma vez (na adesão)</option>
     <option value="mensal" ${cat.portabilidade.cobranca === 'mensal' ? 'selected' : ''}>Todo mês</option></select></div>
+  <h3>Produtos do Bitrix para os serviços</h3>
+  <p class="ajuda">Cada card recebe linhas na aba "Produtos" ligadas a estes itens do catálogo do Bitrix. O preço usado é sempre o do formulário.</p>
+  <div class="regras">${[['numeroAdicional', 'Número adicional (DID/DDR)'], ['ativacao', 'Ativação de linhas'], ['portabilidade', 'Portabilidade'], ['discador', 'Discador automático'], ['grupoCallCenter', 'Grupo Call Center'], ['instalacaoRemota', 'Instalação remota'], ['instalacaoPresencial', 'Instalação presencial']]
+    .map(([k, t]) => `<div class="campo"><label>${esc(t)}</label>${seletorProduto(`data-cfg="produtosBitrix.${k}" data-cfg-tipo="produto"`, get(cat, `produtosBitrix.${k}`))}</div>`).join('')}</div>
+  <p><button class="mini" id="atualizar-produtos">Recarregar produtos do Bitrix</button> <span class="ajuda">${produtosBitrix ? `${produtosBitrix.length} produtos ativos carregados.` : 'Carregando produtos…'}</span></p>
   <h3>Acesso ao formulário</h3>
   ${t('regras.chaveAcesso', 'Chave de acesso', 'Se preenchida, o formulário só abre pelo link com a chave. Trocar a chave invalida o link antigo.')}
   <p class="ajuda">Link para enviar aos vendedores e revendas: <b>${esc(link)}</b></p>`;
@@ -154,6 +174,7 @@ function lerValor(el) {
   const tipo = el.dataset.tipo || el.dataset.cfgTipo;
   if (el.type === 'checkbox') return el.checked;
   if (tipo === 'lista') return el.value.split(',').map((x) => x.trim()).filter(Boolean).map((x) => (/^\d+$/.test(x) && el.dataset.cfg === 'regras.vencimentos' ? Number(x) : x));
+  if (tipo === 'produto') return el.value ? Number(el.value) : null;
   if (tipo === 'text' || tipo === 'select') return el.value;
   if (el.value === '' && el.dataset.null) return null;
   return el.value === '' ? 0 : Number(el.value);
@@ -214,12 +235,25 @@ function login(erro = '') {
   });
 }
 
+async function carregarProdutos(atualizar = false) {
+  try {
+    const r = await fetch('/formulario/admin/api/produtos-bitrix' + (atualizar ? '?atualizar=1' : ''));
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.erro);
+    produtosBitrix = d.produtos;
+  } catch (err) {
+    status = `Produtos do Bitrix indisponíveis: ${err.message || 'erro'}`;
+  }
+  render();
+}
+
 async function carregar() {
   const r = await fetch('/formulario/admin/api/catalogo');
   if (r.status === 401) return login();
   const d = await r.json();
   cat = d.catalogo; historico = d.historico; usuario = d.usuario;
   render();
+  carregarProdutos();
 }
 
 document.addEventListener('change', onChange);
@@ -229,6 +263,7 @@ document.addEventListener('click', async (ev) => {
   if (t.dataset.novo) { const d = TABELAS[t.dataset.novo]; get(cat, d.lista).push(d.novo()); marcar(); render(); }
   if (t.dataset.rem != null) { const d = TABELAS[aba]; get(cat, d.lista).splice(Number(t.dataset.rem), 1); marcar(); render(); }
   if (t.id === 'salvar') salvar();
+  if (t.id === 'atualizar-produtos') { produtosBitrix = null; render(); carregarProdutos(true); }
   if (t.id === 'sair') { await fetch('/formulario/admin/sair', { method: 'POST' }); cat = null; login(); }
 });
 window.addEventListener('beforeunload', (ev) => { if (alterado) { ev.preventDefault(); ev.returnValue = ''; } });

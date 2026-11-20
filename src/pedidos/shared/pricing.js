@@ -45,6 +45,14 @@ export function contarNumerosPortabilidade(bloco) {
   return (bloco.numeros || []).filter((x) => onlyDigits(x)).length;
 }
 
+// Taxa de ativação por linha, por categoria de plano (Pré e Pós cobram; Ilimitado não).
+// Catálogos antigos só tinham "ativacaoPre": vale para Pré e Pós.
+export function valorAtivacao(catalogo, categoria) {
+  const v = catalogo.ativacao?.[categoria];
+  if (v != null) return Number(v) || 0;
+  return categoria === 'pre' || categoria === 'pos' ? Number(catalogo.ativacaoPre) || 0 : 0;
+}
+
 export function precoEspecial(catalogo, { origem, planoId }) {
   if (origem?.tipo !== 'revenda') return null;
   const cnpj = onlyDigits(origem.cnpj);
@@ -89,7 +97,7 @@ export function calcularPedido(catalogo, pedido) {
         descontoMensal: round2((cheio - unit) * linhas),
         adicionais: { quantidade: qtdAdic, precoUnit: precoAdic, total: round2(qtdAdic * precoAdic) },
         totalNumeros: linhas + qtdAdic,
-        ativacao: isPre ? round2(Number(catalogo.ativacaoPre) * linhas) : 0,
+        ativacao: round2(valorAtivacao(catalogo, tipo.categoria) * linhas),
         tarifas: plano.tarifas || null,
         ddd: ddd || null,
         cfop: ddd ? (ddd === Number(regras.cfop.ddd) ? regras.cfop.noDdd : regras.cfop.outros) : null,

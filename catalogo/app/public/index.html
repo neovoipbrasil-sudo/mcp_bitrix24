@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Catálogo Bitrix24</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topo">
+    <div class="marca">
+      <h1>Catálogo de produtos e serviços</h1>
+      <span id="lido" class="sutil">carregando…</span>
+    </div>
+    <div class="acoes-topo">
+      <button id="btn-planilha" class="secundario" title="Lê catalogo/data/precos-pendentes.csv (coluna preco_novo)">Importar planilha de preços</button>
+      <button id="btn-recarregar" class="secundario">Recarregar do Bitrix24</button>
+    </div>
+  </header>
+
+  <main class="grade">
+    <aside class="painel pastas">
+      <div class="painel-cab">
+        <h2>Pastas</h2>
+      </div>
+      <div class="filtros-rapidos">
+        <label><input type="checkbox" id="f-sem-preco"> Só sem preço (R$ 0)</label>
+        <label><input type="checkbox" id="f-inativos"> Mostrar inativos</label>
+      </div>
+      <nav id="arvore" class="arvore"></nav>
+    </aside>
+
+    <section class="painel itens">
+      <div class="painel-cab">
+        <h2 id="titulo-lista">Todos os itens</h2>
+        <input id="busca" type="search" placeholder="Buscar por nome, ID ou pasta…" autocomplete="off">
+      </div>
+      <div class="massa" id="massa" hidden>
+        <span id="massa-n"></span>
+        <select id="massa-pasta"></select>
+        <button id="massa-mover" class="secundario">Mover</button>
+        <button id="massa-desativar" class="secundario">Desativar</button>
+        <button id="massa-ativar" class="secundario">Ativar</button>
+      </div>
+      <div class="tabela-wrap">
+        <table class="tabela">
+          <thead>
+            <tr>
+              <th class="c-sel"><input type="checkbox" id="sel-todos" aria-label="Selecionar todos"></th>
+              <th class="c-id">ID</th>
+              <th>Nome</th>
+              <th class="c-preco">Preço (R$)</th>
+              <th class="c-un">Unidade</th>
+              <th class="c-at">Ativo</th>
+            </tr>
+          </thead>
+          <tbody id="linhas"></tbody>
+        </table>
+      </div>
+      <div class="rascunho" id="rascunho" hidden>
+        <span id="rascunho-n"></span>
+        <button id="rascunho-descartar" class="secundario">Descartar</button>
+        <button id="rascunho-revisar" class="primario">Revisar alterações</button>
+      </div>
+    </section>
+
+    <aside class="painel lateral">
+      <div class="abas" role="tablist">
+        <button class="aba ativa" data-aba="chat" role="tab">Assistente</button>
+        <button class="aba" data-aba="propostas" role="tab">Propostas <span id="n-pendentes" class="selo" hidden></span></button>
+      </div>
+      <div id="aba-chat" class="aba-corpo">
+        <div id="mensagens" class="mensagens">
+          <div class="msg assistente boas-vindas">
+            <p>Olá! Posso consultar e editar o catálogo para você. Exemplos:</p>
+            <ul>
+              <li><button class="sugestao">Quais itens estão sem preço?</button></li>
+              <li><button class="sugestao">Reajuste em 5% os preços de locação dos telefones Fanvil</button></li>
+              <li><button class="sugestao">Crie o serviço "Treinamento remoto — 2 horas" a R$ 180 em Serviços</button></li>
+            </ul>
+            <p class="sutil">Nada é gravado sem você revisar e clicar em <b>Aplicar</b>.</p>
+          </div>
+        </div>
+        <form id="form-chat" class="form-chat">
+          <textarea id="entrada" rows="2" placeholder="Peça algo ao assistente…"></textarea>
+          <div class="form-chat-acoes">
+            <button type="button" id="btn-nova" class="link">Nova conversa</button>
+            <button type="submit" class="primario" id="btn-enviar">Enviar</button>
+          </div>
+        </form>
+      </div>
+      <div id="aba-propostas" class="aba-corpo" hidden>
+        <div id="lista-propostas" class="lista-propostas"></div>
+      </div>
+    </aside>
+  </main>
+  <div id="aviso" class="aviso" role="status" hidden></div>
+  <script src="app.js" type="module"></script>
+</body>
+</html>

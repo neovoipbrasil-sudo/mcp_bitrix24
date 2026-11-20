@@ -287,6 +287,60 @@ function camposPortabilidade(bloco, pedido, calculo) {
   return f;
 }
 
+// ---------------------------------------------------------------- linhas de produto (aba Produtos do card)
+// PRICE é o preço final por unidade (já com desconto); o preço cheio fica em DISCOUNT_SUM/DISCOUNT_RATE.
+// Sem produto associado no catálogo, a linha entra só com nome e preço (PRODUCT_ID 0).
+function linha({ produtoId, nome, quantidade, precoCheio, precoFinal }) {
+  const cheio = Number(precoCheio ?? precoFinal);
+  const final = Number(precoFinal);
+  const desconto = Math.max(0, Math.round((cheio - final) * 100) / 100);
+  return {
+    PRODUCT_ID: Number(produtoId) || 0,
+    PRODUCT_NAME: nome,
+    PRICE: final,
+    QUANTITY: Number(quantidade),
+    DISCOUNT_TYPE_ID: desconto ? 2 : 1,
+    DISCOUNT_RATE: desconto && cheio ? Math.round((desconto / cheio) * 10000) / 100 : 0,
+    DISCOUNT_SUM: desconto,
+    MEASURE_CODE: 796, // unidade (peça)
+  };
+}
+
+export function linhasProdutos(tipo, { catalogo, calculo, bloco, comInstalacao, pedido }) {
+  const pb = catalogo.produtosBitrix || {};
+  const rows = [];
+  if (tipo === 'vox') {
+    const v = calculo.vox;
+    const plano = catalogo.planosVox.find((p) => p.id === v.planoId);
+    rows.push(linha({ produtoId: plano?.bitrixProdutoId, nome: v.plano, quantidade: v.linhas, precoCheio: v.precoCheio, precoFinal: v.precoUnit }));
+    if (v.adicionais.quantidade) rows.push(linha({ produtoId: pb.numeroAdicional, nome: 'DID/DDR Adicional', quantidade: v.adicionais.quantidade, precoFinal: v.adicionais.precoUnit }));
+    if (v.ativacao) rows.push(linha({ produtoId: pb.ativacao, nome: 'Ativação de Linhas Neo Vox', quantidade: v.linhas, precoFinal: v.ativacao / v.linhas }));
+  }
+  if (tipo === 'phone') {
+    const p = calculo.phone;
+    for (const i of p.itens.filter((x) => x.quantidade)) {
+      const lic = catalogo.licencasPhone.find((l) => l.id === i.id);
+      rows.push(linha({ produtoId: lic?.bitrixProdutoIds?.[String(p.fidelidade)], nome: `Neo Phone ${i.nome} — ${p.fidelidade} meses`, quantidade: i.quantidade, precoCheio: i.precoCheio, precoFinal: i.precoUnit }));
+    }
+    if (p.gravacao?.pacotes) {
+      const g = catalogo.gravacao.find((x) => x.id === p.gravacao.id);
+      rows.push(linha({ produtoId: g?.bitrixProdutoId, nome: `Gravação de Chamadas — ${p.gravacao.nome}`, quantidade: p.gravacao.pacotes, precoFinal: p.gravacao.precoUnit }));
+    }
+    if (p.discador) rows.push(linha({ produtoId: pb.discador, nome: 'Discador Automático', quantidade: 1, precoFinal: p.discador }));
+    if (p.grupoCallCenter) rows.push(linha({ produtoId: pb.grupoCallCenter, nome: 'Grupo Call Center', quantidade: 1, precoFinal: p.grupoCallCenter }));
+  }
+  if (tipo === 'portabilidade') {
+    rows.push(linha({ produtoId: pb.portabilidade, nome: 'Portabilidade de Números', quantidade: contarNumerosPortabilidade(bloco), precoFinal: calculo.portabilidade.precoUnit }));
+  }
+  if (comInstalacao && calculo.instalacao) {
+    const remota = pedido.conclusao.instalacao === 'remota';
+    rows.push(linha({ produtoId: remota ? pb.instalacaoRemota : pb.instalacaoPresencial, nome: remota ? 'Instalação Remota' : 'Instalação Presencial', quantidade: 1, precoFinal: calculo.instalacao }));
+  }
+  return rows;
+}
+
+const somaLinhas = (rows) => Math.round(rows.reduce((a, r) => a + r.PRICE * r.QUANTITY, 0) * 100) / 100;
+
 // "Mesmos dados do cliente": o titular da linha é o próprio cliente do pedido.
 export function titularEfetivo(bloco, pedido) {
   if (!bloco.titular?.mesmoCliente) return bloco.titular;
@@ -337,33 +391,29 @@ export async function enviarPedidoAoBitrix({ client, catalogo, pedido, calculo, 
     COMMENTS: `Pedido ${pedidoId} enviado pelo formulário por ${o.nome} (${o.tipo === 'revenda' ? 'revenda' : 'vendedor'}).${leadId ? ` Lead de origem: #${leadId}.` : ''}`,
   };
   const cards = [];
-  const addDeal = async (tipo, titulo, campos, valor) => {
+  // O valor do negócio é a soma das linhas de produto (mensalidades + cobranças únicas).
+  const addDeal = async (tipo, titulo, campos, rows) => {
     const id = Number(await r(client, 'crm.deal.add', {
-      fields: { ...base, ...comuns, ...campos, TITLE: `Pedido ${pedidoId} – ${titulo} – ${nomeCliente}`, OPPORTUNITY: valor },
+      fields: { ...base, ...comuns, ...campos, TITLE: `Pedido ${pedidoId} – ${titulo} – ${nomeCliente}`, OPPORTUNITY: somaLinhas(rows) },
       params: { REGISTER_SONET_EVENT: 'Y' },
     }));
+    if (rows.length) await r(client, 'crm.deal.productrows.set', { id, rows });
     cards.push({ id, tipo, titulo, url: portalHost ? `https://${portalHost}/crm/deal/details/${id}/` : null });
     return id;
   };
 
-  let instalacaoUsada = false;
-  const valorInstalacao = () => {
-    if (instalacaoUsada) return 0;
-    instalacaoUsada = true;
-    return calculo.instalacao || 0;
-  };
+  // A instalação entra uma vez só: no card Neo Vox ou, sem linhas, no card Neo Phone.
+  const ctx = { catalogo, calculo, pedido };
   if (calculo.vox) {
-    const v = calculo.vox;
-    await addDeal('vox', 'Neo Vox', camposVox(calculo, pedido), v.mensal * (v.fidelidade || 1) + v.ativacao + valorInstalacao());
+    await addDeal('vox', 'Neo Vox', camposVox(calculo, pedido), linhasProdutos('vox', { ...ctx, comInstalacao: true }));
   }
   if (calculo.phone) {
-    await addDeal('phone', 'Neo Phone', camposPhone(calculo), calculo.phone.mensal * (calculo.phone.fidelidade || 1) + valorInstalacao());
+    await addDeal('phone', 'Neo Phone', camposPhone(calculo), linhasProdutos('phone', { ...ctx, comInstalacao: !calculo.vox }));
   }
   for (const [i, bloco] of (pedido.portabilidades || []).entries()) {
-    const qtd = contarNumerosPortabilidade(bloco);
     const operadora = bloco.operadora === 'Outra' ? bloco.operadoraOutra : bloco.operadora;
     await addDeal('portabilidade', `Portabilidade ${i + 1} (${bloco.cidade}/${String(bloco.uf).toUpperCase()} – ${operadora})`,
-      { ...camposVox(calculo, pedido), ...camposPortabilidade(bloco, pedido, calculo) }, qtd * calculo.portabilidade.precoUnit);
+      { ...camposVox(calculo, pedido), ...camposPortabilidade(bloco, pedido, calculo) }, linhasProdutos('portabilidade', { ...ctx, bloco }));
   }
 
   // 3. Resumo na timeline de cada card, com links para os outros cards do mesmo pedido.

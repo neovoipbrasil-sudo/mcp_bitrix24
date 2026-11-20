@@ -31,7 +31,7 @@ export function montarResumo(pedido, calculo) {
       ['Linhas', `${v.linhas} × ${brl(v.precoUnit)}${v.descontoPercent ? ` (cheio ${brl(v.precoCheio)}, ${v.descontoPercent}% de desconto)` : ''}`],
       v.adicionais.quantidade && ['Números adicionais', `${v.adicionais.quantidade} × ${brl(v.adicionais.precoUnit)}`],
       ['DDD / CFOP', `${v.ddd ?? '-'} / ${v.cfop ?? '-'}`],
-      v.ativacao && ['Ativação (Pré)', brl(v.ativacao)],
+      v.ativacao && ['Ativação (cobrança única)', `${v.linhas} × ${brl(v.ativacao / v.linhas)} = ${brl(v.ativacao)}`],
       ['Mensal Neo Vox', brl(v.mensal)],
     ]);
   }
