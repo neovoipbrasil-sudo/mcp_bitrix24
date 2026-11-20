@@ -207,3 +207,11 @@ O bot não existe como serviço no Easypanel, então o formulário roda como ser
 - Rotas: `/formulario/`, `/formulario/admin`, `/reports` (login/troca de senha/usuários; 1º acesso admin/admin), `/saude`.
 - Variáveis: `B24_DEFAULT_WEBHOOK` (obrigatória); `SMTP_*` e `PEDIDOS_EMAIL_COPIA` (opcionais).
 - Volume persistente em `/app/data` (catálogo, usuários, histórico, pedidos enviados).
+
+## Linhas de produto nos cards (2026-11-20)
+- Cada card recebe linhas na aba Produtos (`crm.deal.productrows.set`, escopo `crm`), ligadas ao catálogo do Bitrix:
+  Neo Vox = plano × linhas (+ DID adicional, ativação, instalação); Neo Phone = licenças da fidelidade (+ gravação, discador, Grupo Call Center; instalação se não houver Neo Vox); Portabilidade = portabilidade × números.
+- PRICE = preço final do formulário (com desconto); DISCOUNT_SUM/RATE guardam o desconto. O preço do catálogo do Bitrix não é usado.
+- Valor do negócio (OPPORTUNITY) = soma das linhas.
+- Associação no catálogo do formulário: `planosVox[].bitrixProdutoId`, `licencasPhone[].bitrixProdutoIds{12,24,36}`, `gravacao[].bitrixProdutoId`, `produtosBitrix{numeroAdicional, ativacao, portabilidade, discador, grupoCallCenter, instalacaoRemota, instalacaoPresencial}`; editável no painel (lista os produtos ativos via `crm.product.list`).
+- Sem produto no Bitrix: Neo Phone Licença Basic 12 e 24 meses (entram só com nome e preço até serem criados).

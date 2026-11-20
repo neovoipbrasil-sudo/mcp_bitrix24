@@ -10,7 +10,8 @@ import { createReportUserStore } from '../reports/report-users.js';
 
 const dir = mkdtempSync(path.join(os.tmpdir(), 'formulario-dev-'));
 const PORT = Number(process.env.PORT || 3410);
-const fakeClient = { portal: 'exemplo.bitrix24.com.br', call: async () => ({ result: [] }) };
+const produtosExemplo = [{ ID: '704', NAME: 'Neo Vox Full Nuvem Ilimitado 5 — 24 meses', PRICE: '141.8' }, { ID: '130', NAME: 'Portabilidade de Números', PRICE: '9.5' }];
+const fakeClient = { portal: 'exemplo.bitrix24.com.br', call: async (m) => ({ result: m === 'crm.product.list' ? produtosExemplo : [] }) };
 
 // Usuário de teste do painel do catálogo: admin / teste1234 (só neste servidor local).
 const userStore = createReportUserStore({ filePath: path.join(dir, 'report-users.json') });
