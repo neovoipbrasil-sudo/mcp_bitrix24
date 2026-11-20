@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { validarPedido } from './shared/validate-order.js';
-import { montarResumo, resumoEmTexto, resumoEmHtml } from './shared/summary.js';
+import { montarResumo, resumoEmTexto, emailHtml } from './shared/summary.js';
 import { enviarPedidoAoBitrix, buscarCliente } from './bitrix-order.js';
 import { onlyDigits } from './shared/validators.js';
 import { STATUS, resumir } from './pedidos-store.js';
@@ -97,7 +97,7 @@ export function createPedidosRouter({ catalogStore, pedidosStore, bitrixClient, 
         to: r.pedido.origem.email,
         subject: `Pedido ${id} recebido – ${nomeCliente(r.pedido)}`,
         text: `Pedido ${id}\n\n${resumoEmTexto(secoes)}`,
-        html: `<p style="font:14px Arial,sans-serif">Pedido <b>${id}</b> recebido. Resumo:</p>${resumoEmHtml(secoes)}`,
+        html: emailHtml({ titulo: `Pedido ${id} recebido`, introducao: `Cliente: <b>${nomeCliente(r.pedido).replace(/</g, '&lt;')}</b>. Confira o resumo abaixo.`, secoes }),
       });
       if (info?.skipped) {
         pedidosStore.atualizar(id, (x) => { x.email = { situacao: 'desligado' }; });
@@ -343,7 +343,7 @@ export function createPedidosRouter({ catalogStore, pedidosStore, bitrixClient, 
         to: para,
         subject: 'Teste do Formulário de Pedidos',
         text: 'Este é um e-mail de teste do Formulário de Pedidos. Se você recebeu, o envio está funcionando.',
-        html: '<p style="font:14px Arial,sans-serif">Este é um e-mail de teste do <b>Formulário de Pedidos</b>. Se você recebeu, o envio está funcionando.</p>',
+        html: emailHtml({ titulo: 'E-mail de teste', introducao: 'Este é um e-mail de teste do <b>Formulário de Pedidos</b>. Se você recebeu, o envio está funcionando.', secoes: [] }),
       });
       console.log(`formulario: e-mail de teste aceito pelo SMTP id=${r.messageId} resposta="${r.response}"`);
       res.json({ ok: true, aceitos: r.accepted?.length ?? 0, recusados: r.rejected?.length ?? 0, resposta: r.response, id: r.messageId });

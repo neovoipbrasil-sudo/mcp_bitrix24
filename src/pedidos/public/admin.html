@@ -4,12 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Painel de Pedidos</title>
+<title>Painel de Pedidos · Neo VoIP</title>
+<link rel="icon" type="image/png" href="/formulario/assets/marca/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&display=swap">
 <link rel="stylesheet" href="/formulario/assets/form.css">
 <style>
   .abas { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 16px; }
   .abas button { background: var(--card); border: 1px solid var(--line); color: var(--ink-2); font-weight: 500; padding: 7px 12px; }
-  .abas button.ativa { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .abas button.ativa { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
   .caixa { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
   table.ed { width: 100%; border-collapse: collapse; font-size: 13.5px; }
   table.ed th { text-align: left; font-size: 12px; color: var(--ink-3); padding: 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
@@ -39,7 +43,15 @@
 </style>
 </head>
 <body>
-<header class="topo"><div class="topo-in"><p class="marca">Formulário de Pedidos</p><h1>Painel de Pedidos</h1></div></header>
+<header class="topo">
+  <div class="topo-in">
+    <a class="logo" href="/formulario/" aria-label="Neo VoIP">
+      <img src="/formulario/assets/marca/simbolo-branco.png" alt="" width="63" height="34">
+      <span class="logo-texto"><span class="logo-nome">NEO<b>VOIP</b></span><span class="logo-sub">TELECOM CLOUD</span></span>
+    </a>
+    <h1>Painel de Pedidos</h1>
+  </div>
+</header>
 <main class="wrap" id="app"></main>
 <script type="module" src="/formulario/assets/admin.js"></script>
 </body>
