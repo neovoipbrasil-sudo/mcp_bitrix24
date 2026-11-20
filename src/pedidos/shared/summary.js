@@ -70,23 +70,23 @@ export function resumoEmTexto(secoes) {
 const esc = (x) => String(x ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 export function resumoEmHtml(secoes) {
-  return secoes.map((s) => `<h3 style="font:600 13px Arial,sans-serif;margin:18px 0 6px;color:#260140">${esc(s.titulo)}</h3>
+  return secoes.map((s) => `<h3 style="font:600 13px Arial,sans-serif;margin:18px 0 6px;color:#373435">${esc(s.titulo)}</h3>
 <table style="border-collapse:collapse;font:13px Arial,sans-serif;width:100%">${s.linhas.map(([k, v]) =>
-  `<tr><td style="padding:4px 8px 4px 0;color:#5b575d;width:40%;vertical-align:top">${esc(k)}</td><td style="padding:4px 0;color:#260140">${esc(v)}</td></tr>`).join('')}</table>`).join('');
+  `<tr><td style="padding:4px 8px 4px 0;color:#5c5a5b;width:40%;vertical-align:top">${esc(k)}</td><td style="padding:4px 0;color:#373435">${esc(v)}</td></tr>`).join('')}</table>`).join('');
 }
 
-// E-mail com a identidade Neo VoIP (cabeçalho roxo com o nome em branco e ciano). Só HTML com estilos inline.
+// E-mail com a identidade Neo VoIP (cabeçalho grafite com o nome em branco e ciano). Só HTML com estilos inline.
 export function emailHtml({ titulo, introducao, secoes }) {
-  return `<div style="background:#f4f2f7;padding:24px 12px;font-family:Montserrat,Arial,sans-serif">
+  return `<div style="background:#f4f5f6;padding:24px 12px;font-family:Montserrat,Arial,sans-serif">
 <table role="presentation" cellpadding="0" cellspacing="0" style="max-width:640px;width:100%;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;border-collapse:collapse">
-<tr><td style="background:#260140;padding:18px 24px;border-bottom:3px solid #00AFEF">
+<tr><td style="background:#373435;padding:18px 24px;border-bottom:3px solid #00AFEF">
 <span style="font:800 20px Arial,sans-serif;letter-spacing:4px;color:#ffffff">NEO</span><span style="font:800 20px Arial,sans-serif;letter-spacing:4px;color:#00AFEF">VOIP</span>
-<div style="font:600 9px Arial,sans-serif;letter-spacing:3px;color:#c9c3d2;margin-top:4px">TELECOM CLOUD</div></td></tr>
+<div style="font:600 9px Arial,sans-serif;letter-spacing:3px;color:#96989A;margin-top:4px">TELECOM CLOUD</div></td></tr>
 <tr><td style="padding:20px 24px">
-<h2 style="font:800 18px Arial,sans-serif;color:#260140;margin:0 0 6px">${esc(titulo)}</h2>
+<h2 style="font:800 18px Arial,sans-serif;color:#373435;margin:0 0 6px">${esc(titulo)}</h2>
 <p style="font:14px Arial,sans-serif;color:#373435;margin:0 0 8px">${introducao}</p>
 ${resumoEmHtml(secoes)}
 </td></tr>
-<tr><td style="padding:14px 24px;background:#f4f2f7;font:12px Arial,sans-serif;color:#96989A">E-mail automático do Formulário de Pedidos · Neo VoIP</td></tr>
+<tr><td style="padding:14px 24px;background:#f4f5f6;font:12px Arial,sans-serif;color:#96989A">E-mail automático do Formulário de Pedidos · Neo VoIP</td></tr>
 </table></div>`;
 }
