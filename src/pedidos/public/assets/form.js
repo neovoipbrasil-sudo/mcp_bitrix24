@@ -346,7 +346,7 @@ function etapaPortabilidade() {
     <li>Informe corretamente os dados do titular e os números.</li>
     <li>Apenas números fixos podem ser portados.</li></ol>`)}
   ${opcoes({ path: 'querPortabilidade', label: 'Deseja fazer portabilidade de algum número?', itens: [{ valor: 'true', texto: 'Sim' }, { valor: 'false', texto: 'Não' }], tipoValor: 'bool' })}
-  ${p.querPortabilidade ? `${aviso('info', 'Cada bloco (cidade/operadora) vira um card separado no Bitrix24.')}${blocos}
+  ${p.querPortabilidade ? `${aviso('info', 'Portabilidade no mesmo estado do endereço de instalação entra no card do Neo Vox. Portabilidade de outro estado vira um card separado no Bitrix24 (um por estado).')}${blocos}
     <p>${botaoCopiar('add-port', '+ Adicionar portabilidade')}</p>
     ${erroDe('portabilidade') ? aviso('erro', esc(erroDe('portabilidade'))) : calc.portabilidade ? aviso('ok', `Total: ${calc.portabilidade.numeros} número(s) a portar de ${calc.vox?.totalNumeros ?? 0} contratados (linhas + adicionais).`) : ''}` : ''}`;
 }

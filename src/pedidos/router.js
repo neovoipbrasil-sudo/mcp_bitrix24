@@ -127,6 +127,10 @@ export function createPedidosRouter({ catalogStore, bitrixClient, mailer, userSt
             html: `<p style="font:14px Arial,sans-serif">Pedido <b>${pedidoId}</b> recebido. Resumo:</p>${resumoEmHtml(secoes)}`,
           });
           email = { enviado: !r?.skipped };
+          // Rastreio no log do serviço: id da mensagem e resposta do servidor SMTP (sem endereços).
+          if (!r?.skipped) {
+            console.log(`formulario: e-mail do pedido ${pedidoId} aceito pelo SMTP (aceitos ${r.accepted?.length ?? 0}, recusados ${r.rejected?.length ?? 0}) id=${r.messageId} resposta="${r.response}"`);
+          }
         } catch (err) {
           console.error('formulario: e-mail do resumo falhou', err.message);
           email = { enviado: false, erro: true };

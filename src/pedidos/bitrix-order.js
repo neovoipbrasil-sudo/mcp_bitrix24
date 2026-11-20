@@ -287,6 +287,48 @@ function camposPortabilidade(bloco, pedido, calculo) {
   return f;
 }
 
+// Vários blocos de portabilidade do mesmo estado num card só: campos do 1º bloco (titular, técnico)
+// e cidades, operadoras e números de todos os blocos.
+const operadoraDe = (b) => (b.operadora === 'Outra' ? b.operadoraOutra : b.operadora);
+const unicos = (xs) => [...new Set(xs.filter(Boolean))];
+function numerosDoBloco(b) {
+  if (b.modo === 'faixa') return [`${phoneDigits(b.faixa.inicio)} a ${phoneDigits(b.faixa.fim)}`];
+  return b.numeros.filter((x) => onlyDigits(x)).map(phoneDigits);
+}
+
+function camposPortabilidadeGrupo(blocos, pedido, calculo) {
+  const f = camposPortabilidade(blocos[0], pedido, calculo);
+  if (blocos.length === 1) return f;
+  const qtd = blocos.reduce((a, b) => a + contarNumerosPortabilidade(b), 0);
+  f[F.port.cidade] = unicos(blocos.map((b) => b.cidade)).join(' / ');
+  f[F.port.operadora] = unicos(blocos.map(operadoraDe)).join(' / ');
+  f[F.port.quantidade] = String(qtd);
+  f[F.port.valorTotal] = brl(qtd * calculo.portabilidade.precoUnit);
+  f[F.port.emSequencia] = 'Não';
+  f[F.port.numeroUnico] = '';
+  f[F.port.primeiro] = '';
+  f[F.port.ultimo] = '';
+  f[F.port.numeros] = blocos.map((b) => `${b.cidade} – ${operadoraDe(b)}:\n${numerosDoBloco(b).join('\n')}`).join('\n\n');
+  const faturas = blocos.flatMap((b) => fileValues(b.fatura));
+  if (faturas.length) f[F.arqUltimaFatura] = faturas;
+  return f;
+}
+
+// Agrupa a portabilidade por estado. O grupo do mesmo estado do endereço de instalação vai no card
+// Neo Vox; cada outro estado vira um card próprio.
+export function agruparPortabilidade(pedido, { temVox }) {
+  const ufInstalacao = String(pedido.conclusao?.endereco?.uf || '').toUpperCase();
+  const porUf = new Map();
+  for (const b of pedido.portabilidades || []) {
+    const uf = String(b.uf || '').toUpperCase();
+    if (!porUf.has(uf)) porUf.set(uf, []);
+    porUf.get(uf).push(b);
+  }
+  const noCardVox = temVox && porUf.has(ufInstalacao) ? porUf.get(ufInstalacao) : [];
+  const separados = [...porUf.entries()].filter(([uf]) => !(temVox && uf === ufInstalacao)).map(([uf, blocos]) => ({ uf, blocos }));
+  return { noCardVox, separados };
+}
+
 // ---------------------------------------------------------------- linhas de produto (aba Produtos do card)
 // PRICE é o preço final por unidade (já com desconto); o preço cheio fica em DISCOUNT_SUM/DISCOUNT_RATE.
 // Sem produto associado no catálogo, a linha entra só com nome e preço (PRODUCT_ID 0).
@@ -306,7 +348,7 @@ function linha({ produtoId, nome, quantidade, precoCheio, precoFinal }) {
   };
 }
 
-export function linhasProdutos(tipo, { catalogo, calculo, bloco, comInstalacao, pedido }) {
+export function linhasProdutos(tipo, { catalogo, calculo, blocos = [], comInstalacao, pedido }) {
   const pb = catalogo.produtosBitrix || {};
   const rows = [];
   if (tipo === 'vox') {
@@ -329,9 +371,9 @@ export function linhasProdutos(tipo, { catalogo, calculo, bloco, comInstalacao, 
     if (p.discador) rows.push(linha({ produtoId: pb.discador, nome: 'Discador Automático', quantidade: 1, precoFinal: p.discador }));
     if (p.grupoCallCenter) rows.push(linha({ produtoId: pb.grupoCallCenter, nome: 'Grupo Call Center', quantidade: 1, precoFinal: p.grupoCallCenter }));
   }
-  if (tipo === 'portabilidade') {
-    rows.push(linha({ produtoId: pb.portabilidade, nome: 'Portabilidade de Números', quantidade: contarNumerosPortabilidade(bloco), precoFinal: calculo.portabilidade.precoUnit }));
-  }
+  // Portabilidade: no card próprio (tipo 'portabilidade') ou junto no card Neo Vox (blocos do mesmo estado).
+  const qtdPort = blocos.reduce((a, b) => a + contarNumerosPortabilidade(b), 0);
+  if (qtdPort) rows.push(linha({ produtoId: pb.portabilidade, nome: 'Portabilidade de Números', quantidade: qtdPort, precoFinal: calculo.portabilidade.precoUnit }));
   if (comInstalacao && calculo.instalacao) {
     const remota = pedido.conclusao.instalacao === 'remota';
     rows.push(linha({ produtoId: remota ? pb.instalacaoRemota : pb.instalacaoPresencial, nome: remota ? 'Instalação Remota' : 'Instalação Presencial', quantidade: 1, precoFinal: calculo.instalacao }));
@@ -404,16 +446,18 @@ export async function enviarPedidoAoBitrix({ client, catalogo, pedido, calculo, 
 
   // A instalação entra uma vez só: no card Neo Vox ou, sem linhas, no card Neo Phone.
   const ctx = { catalogo, calculo, pedido };
+  const { noCardVox, separados } = agruparPortabilidade(pedido, { temVox: !!calculo.vox });
   if (calculo.vox) {
-    await addDeal('vox', 'Neo Vox', camposVox(calculo, pedido), linhasProdutos('vox', { ...ctx, comInstalacao: true }));
+    const campos = { ...camposVox(calculo, pedido), ...(noCardVox.length ? camposPortabilidadeGrupo(noCardVox, pedido, calculo) : {}) };
+    await addDeal('vox', noCardVox.length ? 'Neo Vox + Portabilidade' : 'Neo Vox', campos, linhasProdutos('vox', { ...ctx, blocos: noCardVox, comInstalacao: true }));
   }
   if (calculo.phone) {
     await addDeal('phone', 'Neo Phone', camposPhone(calculo), linhasProdutos('phone', { ...ctx, comInstalacao: !calculo.vox }));
   }
-  for (const [i, bloco] of (pedido.portabilidades || []).entries()) {
-    const operadora = bloco.operadora === 'Outra' ? bloco.operadoraOutra : bloco.operadora;
-    await addDeal('portabilidade', `Portabilidade ${i + 1} (${bloco.cidade}/${String(bloco.uf).toUpperCase()} – ${operadora})`,
-      { ...camposVox(calculo, pedido), ...camposPortabilidade(bloco, pedido, calculo) }, linhasProdutos('portabilidade', { ...ctx, bloco }));
+  for (const { uf, blocos } of separados) {
+    const detalhe = `${unicos(blocos.map((b) => b.cidade)).join(', ')}/${uf} – ${unicos(blocos.map(operadoraDe)).join(', ')}`;
+    await addDeal('portabilidade', `Portabilidade ${uf} (${detalhe})`,
+      { ...camposVox(calculo, pedido), ...camposPortabilidadeGrupo(blocos, pedido, calculo) }, linhasProdutos('portabilidade', { ...ctx, blocos }));
   }
 
   // 3. Resumo na timeline de cada card, com links para os outros cards do mesmo pedido.

@@ -128,7 +128,20 @@ describe('validação do pedido', () => {
 });
 
 describe('envio ao Bitrix', () => {
-  it('cria 1 card por serviço + 1 por portabilidade, no pipeline do vendedor, com o responsável certo', async () => {
+  it('dois blocos do mesmo estado (fora da instalação) viram um card só', async () => {
+    const calls = [];
+    let id = 500;
+    const client = { portal: 'x', call: vi.fn(async (method, params) => { calls.push([method, params]); if (method.endsWith('.list') || method === 'crm.duplicate.findbycomm') return { result: [] }; return { result: ++id }; }) };
+    const b = (cidade, op, n) => ({ cidade, uf: 'GO', operadora: op, modo: 'lista', numeros: [n], titular: { mesmoCliente: true }, tecnico: pess('T'), fatura: arquivo });
+    const pedido = pedidoPJ({ produtos: 'vox', portabilidades: [b('Goiânia', 'Vivo', '+55 (62) 9 3042-4080'), b('Anápolis', 'Claro', '+55 (62) 9 3042-4081')] });
+    const r = await enviarPedidoAoBitrix({ client, catalogo, pedido, calculo: calcularPedido(catalogo, pedido), pedidoId: 'PED-2', resumoTexto: '', portalHost: 'x' });
+    expect(r.cards.map((c) => c.tipo)).toEqual(['vox', 'portabilidade']);
+    const port = calls.filter(([m]) => m === 'crm.deal.add').map(([, p]) => p.fields)[1];
+    expect(port[F.port.quantidade]).toBe('2');
+    expect(port[F.port.operadora]).toBe('Vivo / Claro');
+    expect(port[F.arqUltimaFatura]).toHaveLength(2);
+  });
+  it('cria 1 card por serviço; portabilidade do estado da instalação vai no card Neo Vox e outro estado vira card próprio', async () => {
     const calls = [];
     let id = 100;
     const client = {
@@ -144,17 +157,21 @@ describe('envio ao Bitrix', () => {
     const pedido = pedidoPJ({ portabilidades: [bloco, { ...bloco, uf: 'GO', cidade: 'Goiânia' }] });
     const calculo = calcularPedido(catalogo, pedido);
     const r = await enviarPedidoAoBitrix({ client, catalogo, pedido, calculo, pedidoId: 'PED-1', resumoTexto: 'resumo', portalHost: client.portal });
-    expect(r.cards.map((c) => c.tipo)).toEqual(['vox', 'phone', 'portabilidade', 'portabilidade']);
+    expect(r.cards.map((c) => c.tipo)).toEqual(['vox', 'phone', 'portabilidade']);
+    expect(r.cards[0].titulo).toBe('Neo Vox + Portabilidade');
+    expect(r.cards[2].titulo).toMatch(/^Portabilidade GO/);
     const deals = calls.filter(([m]) => m === 'crm.deal.add').map(([, p]) => p.fields);
     expect(deals.every((d) => d.CATEGORY_ID === 22 && d.STAGE_ID === 'C22:UC_5CXUV0' && d.ASSIGNED_BY_ID === 762 && d.ORIGIN_ID === 'PED-1')).toBe(true);
     expect(deals[0][F.pj.cnpj]).toBe('11.222.333/0001-81');
     expect(deals[0][F.pj.socio.celular]).toBe('5561999990000');
-    expect(deals[2][F.port.numeroUnico]).toBe('5561933330000');
-    expect(deals[3][F.port.uf]).toBe('GO');
+    expect(deals[0][F.port.numeroUnico]).toBe('5561933330000'); // DF (instalação) no card Neo Vox
+    expect(deals[0][F.port.uf]).toBe('DF');
+    expect(deals[2][F.port.uf]).toBe('GO');
+    expect(deals[1][F.port.uf]).toBeUndefined(); // card Neo Phone sem portabilidade
     expect(calls.some(([m]) => m === 'crm.company.add')).toBe(true);
     // Linhas de produto ligadas ao catálogo do Bitrix, com o preço do formulário
     const rows = calls.filter(([m]) => m === 'crm.deal.productrows.set').map(([, p]) => p.rows);
-    expect(rows).toHaveLength(4);
+    expect(rows).toHaveLength(3);
     const [vox, phone, port] = rows;
     expect(vox[0]).toMatchObject({ PRODUCT_ID: 704, QUANTITY: 30, PRICE: 70.9, DISCOUNT_SUM: 70.9, DISCOUNT_RATE: 50 });
     expect(vox.find((r) => r.PRODUCT_ID === 134)).toMatchObject({ QUANTITY: 2, PRICE: 6.5 });
@@ -162,8 +179,10 @@ describe('envio ao Bitrix', () => {
     expect(phone.find((r) => r.PRODUCT_ID === 420)).toBeUndefined();
     expect(phone.find((r) => r.PRODUCT_ID === 752)).toMatchObject({ QUANTITY: 2, PRICE: 19.97 }); // Essentials 24m
     expect(phone.find((r) => r.PRODUCT_NAME.includes('Basic'))).toMatchObject({ PRODUCT_ID: 0, PRICE: 27.97 }); // sem produto no Bitrix
+    expect(vox.find((r) => r.PRODUCT_ID === 130)).toMatchObject({ QUANTITY: 1, PRICE: 9.5 });
+    expect(port).toHaveLength(1);
     expect(port[0]).toMatchObject({ PRODUCT_ID: 130, QUANTITY: 1, PRICE: 9.5 });
-    expect(deals[0].OPPORTUNITY).toBe(Math.round((30 * 70.9 + 2 * 6.5 + 50) * 100) / 100);
+    expect(deals[0].OPPORTUNITY).toBe(Math.round((30 * 70.9 + 2 * 6.5 + 9.5 + 50) * 100) / 100);
   });
 });
 

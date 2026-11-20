@@ -215,3 +215,8 @@ O bot não existe como serviço no Easypanel, então o formulário roda como ser
 - Valor do negócio (OPPORTUNITY) = soma das linhas.
 - Associação no catálogo do formulário: `planosVox[].bitrixProdutoId`, `licencasPhone[].bitrixProdutoIds{12,24,36}`, `gravacao[].bitrixProdutoId`, `produtosBitrix{numeroAdicional, ativacao, portabilidade, discador, grupoCallCenter, instalacaoRemota, instalacaoPresencial}`; editável no painel (lista os produtos ativos via `crm.product.list`).
 - Sem produto no Bitrix: Neo Phone Licença Basic 12 e 24 meses (entram só com nome e preço até serem criados).
+
+## Portabilidade por estado (2026-11-20, decisão do usuário)
+- Portabilidade do MESMO estado (UF) do endereço de instalação entra no card Neo Vox (título "Neo Vox + Portabilidade"): campos de portabilidade + linha de produto "Portabilidade de Números".
+- Cada OUTRO estado vira um card próprio ("Portabilidade GO (…)"); vários blocos do mesmo estado são juntados num card só (cidades, operadoras e números de todos; titular/técnico do 1º bloco; todas as faturas).
+- E-mail: o log do serviço registra, a cada pedido, o id da mensagem e a resposta do SMTP (sem endereços).
