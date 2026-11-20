@@ -1,17 +1,17 @@
-/* Identidade visual Neo VoIP (Manual da Marca 2022): roxo #3b1755/#260140, ciano #00AFEF,
-   azul #0C698B, cinzas #373435/#96989A; fonte Montserrat (títulos ExtraBold, subtítulos SemiBold). */
+/* Identidade visual Neo VoIP, SEM roxo: grafite #373435, cinza #96989A, ciano #00AFEF,
+   azul #0C698B e branco #FFFFFF; fonte Montserrat (Manual da Marca 2022). */
 :root {
-  --roxo: #3b1755; --roxo-escuro: #260140; --ciano: #00AFEF; --azul: #0C698B; --grafite: #373435; --cinza: #96989A;
-  --bg: #f4f2f7; --card: #ffffff; --ink: #373435; --ink-2: #5b575d; --ink-3: #8b878f; --titulo: #260140;
-  --line: #e2dde9; --accent: #3b1755; --on-accent: #ffffff; --accent-2: #efe8f6; --link: #0C698B; --foco: #00AFEF;
-  --warn: #8a5300; --warn-bg: #fff4e0; --err: #b3261e; --err-bg: #fdecea; --ok: #0C698B; --ok-bg: #e3f6fd;
+  --grafite: #373435; --grafite-escuro: #2a2829; --cinza: #96989A; --ciano: #00AFEF; --azul: #0C698B; --branco: #FFFFFF;
+  --bg: #f4f5f6; --card: #FFFFFF; --ink: #373435; --ink-2: #5c5a5b; --ink-3: #96989A; --titulo: #373435;
+  --line: #dfe2e4; --accent: #0C698B; --on-accent: #FFFFFF; --accent-2: #e6f7fd; --link: #0C698B; --foco: #00AFEF;
+  --warn: #8a5300; --warn-bg: #fff4e0; --err: #b3261e; --err-bg: #fdecea; --ok: #0C698B; --ok-bg: #e6f7fd;
   --radius: 12px; --sans: "Montserrat", ui-sans-serif, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #120a1a; --card: #1c1226; --ink: #ece8f1; --ink-2: #bdb4c8; --ink-3: #8d8496; --titulo: #ffffff;
-    --line: #34263f; --accent: #00AFEF; --on-accent: #12061c; --accent-2: #24163a; --link: #4fc8f5; --foco: #00AFEF;
-    --warn: #f0b35a; --warn-bg: #2d2412; --err: #f08a80; --err-bg: #331a18; --ok: #4fc8f5; --ok-bg: #0f2a36;
+    --bg: #1d1c1d; --card: #2a2829; --ink: #f1f1f1; --ink-2: #c7c8c9; --ink-3: #96989A; --titulo: #FFFFFF;
+    --line: #403e3f; --accent: #00AFEF; --on-accent: #1d1c1d; --accent-2: #12323f; --link: #4fc8f5; --foco: #00AFEF;
+    --warn: #f0b35a; --warn-bg: #2d2412; --err: #f08a80; --err-bg: #331a18; --ok: #4fc8f5; --ok-bg: #12323f;
   }
 }
 * { box-sizing: border-box; }
@@ -19,16 +19,16 @@ html { -webkit-text-size-adjust: 100%; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 500 15px/1.55 var(--sans); }
 a { color: var(--link); }
 
-/* Cabeçalho com o logo sobre fundo roxo-escuro (versão branca + ciano do manual) */
-.topo { background: linear-gradient(110deg, var(--roxo-escuro) 0%, var(--roxo) 100%); color: #fff; border-bottom: 3px solid var(--ciano); }
+/* Cabeçalho com o logo sobre fundo grafite (versão branca + ciano do manual) */
+.topo { background: linear-gradient(110deg, var(--grafite-escuro) 0%, var(--grafite) 100%); color: #fff; border-bottom: 3px solid var(--ciano); }
 .topo-in { max-width: 1120px; margin: 0 auto; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px 24px; flex-wrap: wrap; }
 .logo { display: flex; align-items: center; gap: 12px; text-decoration: none; color: #fff; }
 .logo img { height: 34px; width: auto; display: block; }
 .logo-texto { display: flex; flex-direction: column; line-height: 1; }
 .logo-nome { font-weight: 800; font-size: 21px; letter-spacing: .2em; }
 .logo-nome b { color: var(--ciano); font-weight: 800; }
-.logo-sub { font-weight: 600; font-size: 8.5px; letter-spacing: .32em; color: #c9c3d2; margin-top: 5px; }
-.topo h1 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: .04em; color: #e9e3f2; }
+.logo-sub { font-weight: 600; font-size: 8.5px; letter-spacing: .32em; color: var(--cinza); margin-top: 5px; }
+.topo h1 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: .04em; color: var(--branco); }
 .marca { display: none; }
 .wrap { max-width: 1120px; margin: 0 auto; padding: 16px 16px 64px; }
 
