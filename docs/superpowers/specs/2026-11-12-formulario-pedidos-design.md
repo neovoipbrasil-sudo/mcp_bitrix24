@@ -215,3 +215,23 @@ O bot não existe como serviço no Easypanel, então o formulário roda como ser
 - Valor do negócio (OPPORTUNITY) = soma das linhas.
 - Associação no catálogo do formulário: `planosVox[].bitrixProdutoId`, `licencasPhone[].bitrixProdutoIds{12,24,36}`, `gravacao[].bitrixProdutoId`, `produtosBitrix{numeroAdicional, ativacao, portabilidade, discador, grupoCallCenter, instalacaoRemota, instalacaoPresencial}`; editável no painel (lista os produtos ativos via `crm.product.list`).
 - Sem produto no Bitrix: Neo Phone Licença Basic 12 e 24 meses (entram só com nome e preço até serem criados).
+
+## Portabilidade por estado (2026-11-20, decisão do usuário)
+- Portabilidade do MESMO estado (UF) do endereço de instalação entra no card Neo Vox (título "Neo Vox + Portabilidade"): campos de portabilidade + linha de produto "Portabilidade de Números".
+- Cada OUTRO estado vira um card próprio ("Portabilidade GO (…)"); vários blocos do mesmo estado são juntados num card só (cidades, operadoras e números de todos; titular/técnico do 1º bloco; todas as faturas).
+- E-mail: o log do serviço registra, a cada pedido, o id da mensagem e a resposta do SMTP (sem endereços).
+
+## Painel de pedidos e usuários (2026-11-20)
+- Todo envio é SALVO antes de ir ao Bitrix (`src/pedidos/pedidos-store.js`): `DATA_DIR/pedidos/<PED-…>/pedido.json` + `anexos/`. Se o Bitrix falhar, o vendedor vê "pedido recebido e salvo" e o painel mostra "Falhou no Bitrix" com botão de reenvio (cards parciais de uma tentativa anterior exigem confirmação).
+- `/formulario/admin` virou o "Painel de Pedidos", com login próprio (troca de senha obrigatória no 1º acesso, no próprio painel) e perfis:
+  - **Administrador**: pedidos + catálogo + usuários.
+  - **Operador**: só pedidos (lista, filtros, detalhe, anexos, status, observações, reenviar ao Bitrix/e-mail, exportar CSV).
+- Status internos: Novo, Em análise, Contrato enviado, Concluído, Cancelado. Histórico registra quem fez o quê.
+- Exportação: CSV (separador ";", UTF-8 com BOM) da lista filtrada.
+- Perfil `operador` adicionado ao cadastro de usuários (`src/reports/report-users.js`), com `setRole` que não deixa o sistema sem administrador.
+
+## E-mail via Resend (2026-11-20)
+- O servidor da hospedagem (mail.neovoip.com.br) aceitava (250 OK) e entregava só dentro do domínio; para fora não entregava.
+- Solução: Resend. SMTP_HOST=smtp.resend.com, SMTP_PORT=465, SMTP_USER=resend, SMTP_PASS=API key (Sending access, só neovoip.com.br). Remetente segue pedidos@neovoip.com.br. FUNCIONANDO.
+- DNS: `send.neovoip.com.br` já era CNAME de outro serviço (rmta.net), por isso o Resend precisa de Return-Path próprio (ver painel do Resend). DKIM em `resend._domainkey`.
+- Rastreio de entrega: aba Logs do Resend.

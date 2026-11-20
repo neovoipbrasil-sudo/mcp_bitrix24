@@ -1,28 +1,40 @@
+/* Identidade visual Neo VoIP (Manual da Marca 2022): roxo #3b1755/#260140, ciano #00AFEF,
+   azul #0C698B, cinzas #373435/#96989A; fonte Montserrat (títulos ExtraBold, subtítulos SemiBold). */
 :root {
-  --bg: #f3f5f4; --card: #ffffff; --ink: #14201f; --ink-2: #4b5a59; --ink-3: #7d8b8a;
-  --line: #d9e0de; --accent: #0f6e63; --accent-2: #e6f2f0; --warn: #9a5b00; --warn-bg: #fff5e3;
-  --err: #b3261e; --err-bg: #fdecea; --ok: #1e7a4c; --ok-bg: #e5f4ec;
-  --radius: 10px; --sans: ui-sans-serif, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --roxo: #3b1755; --roxo-escuro: #260140; --ciano: #00AFEF; --azul: #0C698B; --grafite: #373435; --cinza: #96989A;
+  --bg: #f4f2f7; --card: #ffffff; --ink: #373435; --ink-2: #5b575d; --ink-3: #8b878f; --titulo: #260140;
+  --line: #e2dde9; --accent: #3b1755; --on-accent: #ffffff; --accent-2: #efe8f6; --link: #0C698B; --foco: #00AFEF;
+  --warn: #8a5300; --warn-bg: #fff4e0; --err: #b3261e; --err-bg: #fdecea; --ok: #0C698B; --ok-bg: #e3f6fd;
+  --radius: 12px; --sans: "Montserrat", ui-sans-serif, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0f1514; --card: #172120; --ink: #e8eeed; --ink-2: #a9b7b5; --ink-3: #74827f;
-    --line: #2a3634; --accent: #3fb6a5; --accent-2: #15302c; --warn: #f0b35a; --warn-bg: #2d2412;
-    --err: #f08a80; --err-bg: #331a18; --ok: #6fd3a0; --ok-bg: #12291d;
+    --bg: #120a1a; --card: #1c1226; --ink: #ece8f1; --ink-2: #bdb4c8; --ink-3: #8d8496; --titulo: #ffffff;
+    --line: #34263f; --accent: #00AFEF; --on-accent: #12061c; --accent-2: #24163a; --link: #4fc8f5; --foco: #00AFEF;
+    --warn: #f0b35a; --warn-bg: #2d2412; --err: #f08a80; --err-bg: #331a18; --ok: #4fc8f5; --ok-bg: #0f2a36;
   }
 }
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
-body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--sans); }
-.topo { background: var(--accent); color: #fff; }
-.topo-in { max-width: 1120px; margin: 0 auto; padding: 18px 16px; }
-.marca { margin: 0; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; opacity: .85; }
-.topo h1 { margin: 2px 0 0; font-size: 22px; font-weight: 600; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 500 15px/1.55 var(--sans); }
+a { color: var(--link); }
+
+/* Cabeçalho com o logo sobre fundo roxo-escuro (versão branca + ciano do manual) */
+.topo { background: linear-gradient(110deg, var(--roxo-escuro) 0%, var(--roxo) 100%); color: #fff; border-bottom: 3px solid var(--ciano); }
+.topo-in { max-width: 1120px; margin: 0 auto; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px 24px; flex-wrap: wrap; }
+.logo { display: flex; align-items: center; gap: 12px; text-decoration: none; color: #fff; }
+.logo img { height: 34px; width: auto; display: block; }
+.logo-texto { display: flex; flex-direction: column; line-height: 1; }
+.logo-nome { font-weight: 800; font-size: 21px; letter-spacing: .2em; }
+.logo-nome b { color: var(--ciano); font-weight: 800; }
+.logo-sub { font-weight: 600; font-size: 8.5px; letter-spacing: .32em; color: #c9c3d2; margin-top: 5px; }
+.topo h1 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: .04em; color: #e9e3f2; }
+.marca { display: none; }
 .wrap { max-width: 1120px; margin: 0 auto; padding: 16px 16px 64px; }
 
 .passos { list-style: none; display: flex; gap: 6px; padding: 0; margin: 0 0 16px; overflow-x: auto; scrollbar-width: none; }
 .passos li { flex: 0 0 auto; font-size: 12px; padding: 6px 10px; border-radius: 999px; background: var(--card); border: 1px solid var(--line); color: var(--ink-3); white-space: nowrap; }
-.passos li.atual { background: var(--accent); border-color: var(--accent); color: #fff; }
+.passos li.atual { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 700; }
 .passos li.feito { color: var(--accent); border-color: var(--accent); }
 
 .grade { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
@@ -32,16 +44,17 @@ form, .painel { background: var(--card); border: 1px solid var(--line); border-r
 form { padding: 20px; }
 .painel { padding: 16px; position: sticky; top: 12px; }
 @media (max-width: 900px) { .painel { position: static; } }
-.painel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); margin: 0 0 10px; font-weight: 600; }
+.painel { border-top: 4px solid var(--ciano); }
+.painel h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .12em; color: var(--titulo); margin: 0 0 10px; font-weight: 800; }
 .painel dl { margin: 0; display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; font-size: 14px; }
 .painel dt { color: var(--ink-2); }
 .painel dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
-.painel .total { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 8px; font-weight: 600; }
+.painel .total { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 8px; font-weight: 800; color: var(--titulo); }
 .painel .vazio { color: var(--ink-3); font-size: 14px; margin: 0; }
 
-h2.titulo { font-size: 20px; margin: 0 0 4px; }
+h2.titulo { font-size: 21px; font-weight: 800; color: var(--titulo); margin: 0 0 4px; letter-spacing: -.01em; }
 .sub { color: var(--ink-2); margin: 0 0 18px; }
-h3 { font-size: 15px; margin: 22px 0 10px; padding-top: 14px; border-top: 1px solid var(--line); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+h3 { font-size: 15px; font-weight: 700; color: var(--titulo); margin: 22px 0 10px; padding-top: 14px; border-top: 1px solid var(--line); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 h3:first-of-type { border-top: 0; padding-top: 0; }
 h3 .acao { margin-left: auto; }
 
@@ -54,7 +67,8 @@ input, select, textarea {
   padding: 9px 11px; width: 100%; min-width: 0;
 }
 textarea { min-height: 90px; resize: vertical; }
-input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-color: var(--accent); }
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--foco); outline-offset: 0; border-color: var(--foco); }
+button:focus-visible, a:focus-visible { outline: 2px solid var(--foco); outline-offset: 2px; }
 input[readonly] { color: var(--ink-2); background: transparent; }
 .campo.erro input, .campo.erro select, .campo.erro textarea { border-color: var(--err); background: var(--err-bg); }
 .msg-erro { color: var(--err); font-size: 12.5px; }
@@ -64,14 +78,15 @@ input[readonly] { color: var(--ink-2); background: transparent; }
 .opcoes { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
 .opcoes label { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; cursor: pointer; background: var(--bg); font-size: 14px; }
 .opcoes input { width: auto; margin: 0; accent-color: var(--accent); }
-.opcoes label:has(input:checked) { border-color: var(--accent); background: var(--accent-2); }
+.opcoes label:has(input:checked) { border-color: var(--accent); background: var(--accent-2); font-weight: 600; }
 .grupo.erro .opcoes label { border-color: var(--err); }
 
-button { font: inherit; font-weight: 600; border-radius: 8px; padding: 10px 16px; cursor: pointer; border: 1px solid transparent; }
-.pri { background: var(--accent); color: #fff; }
+button { font: inherit; font-weight: 700; border-radius: 8px; padding: 10px 16px; cursor: pointer; border: 1px solid transparent; }
+.pri { background: var(--accent); color: var(--on-accent); }
+.pri:hover { filter: brightness(1.12); }
 .pri:disabled { opacity: .6; cursor: wait; }
 .sec { background: transparent; color: var(--ink); border-color: var(--line); }
-.mini { font-size: 13px; padding: 6px 10px; background: var(--accent-2); color: var(--accent); border-color: transparent; }
+.mini { font-size: 13px; padding: 6px 10px; background: var(--accent-2); color: var(--titulo); border-color: transparent; }
 .mini.perigo { background: var(--err-bg); color: var(--err); }
 .nav-botoes { display: flex; justify-content: space-between; gap: 10px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
 

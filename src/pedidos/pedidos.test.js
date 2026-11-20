@@ -9,6 +9,8 @@ import { calcularPedido, resolverPlanoVox, contarNumerosPortabilidade, tiposVoxD
 import { validarPedido } from './shared/validate-order.js';
 import { createCatalogStore } from './catalog-store.js';
 import { createPedidosRouter } from './router.js';
+import { createPedidosStore } from './pedidos-store.js';
+import { createReportUserStore } from '../reports/report-users.js';
 import { enviarPedidoAoBitrix } from './bitrix-order.js';
 import { F } from './bitrix-fields.js';
 
@@ -128,7 +130,20 @@ describe('validação do pedido', () => {
 });
 
 describe('envio ao Bitrix', () => {
-  it('cria 1 card por serviço + 1 por portabilidade, no pipeline do vendedor, com o responsável certo', async () => {
+  it('dois blocos do mesmo estado (fora da instalação) viram um card só', async () => {
+    const calls = [];
+    let id = 500;
+    const client = { portal: 'x', call: vi.fn(async (method, params) => { calls.push([method, params]); if (method.endsWith('.list') || method === 'crm.duplicate.findbycomm') return { result: [] }; return { result: ++id }; }) };
+    const b = (cidade, op, n) => ({ cidade, uf: 'GO', operadora: op, modo: 'lista', numeros: [n], titular: { mesmoCliente: true }, tecnico: pess('T'), fatura: arquivo });
+    const pedido = pedidoPJ({ produtos: 'vox', portabilidades: [b('Goiânia', 'Vivo', '+55 (62) 9 3042-4080'), b('Anápolis', 'Claro', '+55 (62) 9 3042-4081')] });
+    const r = await enviarPedidoAoBitrix({ client, catalogo, pedido, calculo: calcularPedido(catalogo, pedido), pedidoId: 'PED-2', resumoTexto: '', portalHost: 'x' });
+    expect(r.cards.map((c) => c.tipo)).toEqual(['vox', 'portabilidade']);
+    const port = calls.filter(([m]) => m === 'crm.deal.add').map(([, p]) => p.fields)[1];
+    expect(port[F.port.quantidade]).toBe('2');
+    expect(port[F.port.operadora]).toBe('Vivo / Claro');
+    expect(port[F.arqUltimaFatura]).toHaveLength(2);
+  });
+  it('cria 1 card por serviço; portabilidade do estado da instalação vai no card Neo Vox e outro estado vira card próprio', async () => {
     const calls = [];
     let id = 100;
     const client = {
@@ -144,17 +159,21 @@ describe('envio ao Bitrix', () => {
     const pedido = pedidoPJ({ portabilidades: [bloco, { ...bloco, uf: 'GO', cidade: 'Goiânia' }] });
     const calculo = calcularPedido(catalogo, pedido);
     const r = await enviarPedidoAoBitrix({ client, catalogo, pedido, calculo, pedidoId: 'PED-1', resumoTexto: 'resumo', portalHost: client.portal });
-    expect(r.cards.map((c) => c.tipo)).toEqual(['vox', 'phone', 'portabilidade', 'portabilidade']);
+    expect(r.cards.map((c) => c.tipo)).toEqual(['vox', 'phone', 'portabilidade']);
+    expect(r.cards[0].titulo).toBe('Neo Vox + Portabilidade');
+    expect(r.cards[2].titulo).toMatch(/^Portabilidade GO/);
     const deals = calls.filter(([m]) => m === 'crm.deal.add').map(([, p]) => p.fields);
     expect(deals.every((d) => d.CATEGORY_ID === 22 && d.STAGE_ID === 'C22:UC_5CXUV0' && d.ASSIGNED_BY_ID === 762 && d.ORIGIN_ID === 'PED-1')).toBe(true);
     expect(deals[0][F.pj.cnpj]).toBe('11.222.333/0001-81');
     expect(deals[0][F.pj.socio.celular]).toBe('5561999990000');
-    expect(deals[2][F.port.numeroUnico]).toBe('5561933330000');
-    expect(deals[3][F.port.uf]).toBe('GO');
+    expect(deals[0][F.port.numeroUnico]).toBe('5561933330000'); // DF (instalação) no card Neo Vox
+    expect(deals[0][F.port.uf]).toBe('DF');
+    expect(deals[2][F.port.uf]).toBe('GO');
+    expect(deals[1][F.port.uf]).toBeUndefined(); // card Neo Phone sem portabilidade
     expect(calls.some(([m]) => m === 'crm.company.add')).toBe(true);
     // Linhas de produto ligadas ao catálogo do Bitrix, com o preço do formulário
     const rows = calls.filter(([m]) => m === 'crm.deal.productrows.set').map(([, p]) => p.rows);
-    expect(rows).toHaveLength(4);
+    expect(rows).toHaveLength(3);
     const [vox, phone, port] = rows;
     expect(vox[0]).toMatchObject({ PRODUCT_ID: 704, QUANTITY: 30, PRICE: 70.9, DISCOUNT_SUM: 70.9, DISCOUNT_RATE: 50 });
     expect(vox.find((r) => r.PRODUCT_ID === 134)).toMatchObject({ QUANTITY: 2, PRICE: 6.5 });
@@ -162,22 +181,31 @@ describe('envio ao Bitrix', () => {
     expect(phone.find((r) => r.PRODUCT_ID === 420)).toBeUndefined();
     expect(phone.find((r) => r.PRODUCT_ID === 752)).toMatchObject({ QUANTITY: 2, PRICE: 19.97 }); // Essentials 24m
     expect(phone.find((r) => r.PRODUCT_NAME.includes('Basic'))).toMatchObject({ PRODUCT_ID: 0, PRICE: 27.97 }); // sem produto no Bitrix
+    expect(vox.find((r) => r.PRODUCT_ID === 130)).toMatchObject({ QUANTITY: 1, PRICE: 9.5 });
+    expect(port).toHaveLength(1);
     expect(port[0]).toMatchObject({ PRODUCT_ID: 130, QUANTITY: 1, PRICE: 9.5 });
-    expect(deals[0].OPPORTUNITY).toBe(Math.round((30 * 70.9 + 2 * 6.5 + 50) * 100) / 100);
+    expect(deals[0].OPPORTUNITY).toBe(Math.round((30 * 70.9 + 2 * 6.5 + 9.5 + 50) * 100) / 100);
   });
 });
 
 describe('rotas', () => {
-  function app({ enviar = vi.fn(async () => ({ pedidoId: 'PED-X', cards: [{ id: 1, tipo: 'vox', titulo: 'Neo Vox' }] })) } = {}) {
+  function app({ enviar = vi.fn(async ({ pedidoId, aoCriarCard }) => { const c = { id: 1, tipo: 'vox', titulo: 'Neo Vox' }; aoCriarCard(c); return { pedidoId, cards: [c] }; }) } = {}) {
     const dir = mkdtempSync(path.join(os.tmpdir(), 'pedidos-'));
     const catalogStore = createCatalogStore({ filePath: path.join(dir, 'cat.json') });
     catalogStore.save(catalogo, { usuario: 'teste' });
+    const userStore = createReportUserStore({ filePath: path.join(dir, 'users.json') });
+    const pedidosStore = createPedidosStore({ dir: path.join(dir, 'pedidos') });
     const a = express();
-    a.use('/formulario', createPedidosRouter({ catalogStore, bitrixClient: { portal: 'x' }, mailer: { send: async () => ({ skipped: true }) }, userStore: { get: () => null, authenticate: () => null }, enviar }));
-    return { a, enviar, catalogStore };
+    a.use('/formulario', createPedidosRouter({ catalogStore, pedidosStore, bitrixClient: { portal: 'x' }, mailer: { send: async () => ({ skipped: true }) }, userStore, enviar }));
+    return { a, enviar, catalogStore, userStore, pedidosStore };
   }
-  it('recusa pedido inválido (422) e aceita o válido uma única vez por envioId', async () => {
-    const { a, enviar } = app();
+  async function entrar(a, usuario, senha) {
+    const r = await request(a).post('/formulario/admin/login').send({ usuario, senha });
+    return { r, cookie: (r.headers['set-cookie'] || []).map((c) => c.split(';')[0]).join('; ') };
+  }
+
+  it('recusa pedido inválido (422), salva o válido com anexos e não duplica por envioId', async () => {
+    const { a, enviar, pedidosStore } = app();
     const ruim = await request(a).post('/formulario/api/pedidos').send({ envioId: 'abcdefgh123', pedido: { ...pedidoPJ(), produtos: '' } });
     expect(ruim.status).toBe(422);
     const ok1 = await request(a).post('/formulario/api/pedidos').send({ envioId: 'abcdefgh123', pedido: pedidoPJ() });
@@ -185,7 +213,57 @@ describe('rotas', () => {
     expect(ok1.status).toBe(200);
     expect(ok2.body.pedidoId).toBe(ok1.body.pedidoId);
     expect(enviar).toHaveBeenCalledTimes(1);
+    const salvo = pedidosStore.obter(ok1.body.pedidoId);
+    expect(salvo.bitrix.situacao).toBe('enviado');
+    expect(salvo.pedido.arquivos.documentos[0]).toMatchObject({ nome: 'doc.pdf', arquivo: '01-doc.pdf' });
+    expect(JSON.stringify(salvo)).not.toContain(arquivo[0].base64); // conteúdo fica no arquivo, não no JSON
+    expect(pedidosStore.pedidoComAnexos(salvo.id).arquivos.documentos[0].base64).toBe(arquivo[0].base64);
   });
+
+  it('com o Bitrix fora, o pedido fica salvo e o operador reenvia pelo painel', async () => {
+    let falhar = true;
+    const enviar = vi.fn(async ({ pedidoId }) => { if (falhar) throw new Error('Bitrix24 error [QUERY_LIMIT_EXCEEDED]'); return { pedidoId, cards: [{ id: 7, tipo: 'vox', titulo: 'Neo Vox' }] }; });
+    const { a, userStore } = app({ enviar });
+    const r = await request(a).post('/formulario/api/pedidos').send({ envioId: 'falha-0001', pedido: pedidoPJ() });
+    expect(r.status).toBe(200);
+    expect(r.body.bitrixFalhou).toBe(true);
+
+    userStore.create({ username: 'op', password: 'inicial123', role: 'operador' });
+    const primeiro = await entrar(a, 'op', 'inicial123');
+    expect(primeiro.r.status).toBe(409); // precisa trocar a senha
+    const troca = await request(a).post('/formulario/admin/login').send({ usuario: 'op', senha: 'inicial123', novaSenha: 'definitiva1' });
+    expect(troca.status).toBe(200);
+    const { cookie } = await entrar(a, 'op', 'definitiva1');
+
+    const lista = await request(a).get('/formulario/admin/api/pedidos').set('cookie', cookie);
+    expect(lista.body.pedidos[0]).toMatchObject({ id: r.body.pedidoId, bitrix: 'falhou', status: 'Novo' });
+    expect((await request(a).get('/formulario/admin/api/catalogo').set('cookie', cookie)).status).toBe(403); // operador não mexe no catálogo
+    expect((await request(a).get('/formulario/admin/api/usuarios').set('cookie', cookie)).status).toBe(403);
+
+    falhar = false;
+    const re = await request(a).post(`/formulario/admin/api/pedidos/${r.body.pedidoId}/reenviar`).set('cookie', cookie).send({});
+    expect(re.status).toBe(200);
+    expect((await request(a).post(`/formulario/admin/api/pedidos/${r.body.pedidoId}/reenviar`).set('cookie', cookie).send({})).status).toBe(409); // já enviado
+
+    const st = await request(a).patch(`/formulario/admin/api/pedidos/${r.body.pedidoId}`).set('cookie', cookie).send({ status: 'Em análise', observacao: 'Conferir contrato social' });
+    expect(st.body.pedido.status).toBe('Em análise');
+    expect(st.body.pedido.observacoes[0]).toMatchObject({ usuario: 'op', texto: 'Conferir contrato social' });
+    const anexo = await request(a).get(`/formulario/admin/api/pedidos/${r.body.pedidoId}/anexos/01-doc.pdf`).set('cookie', cookie);
+    expect(anexo.status).toBe(200);
+    expect((await request(a).get(`/formulario/admin/api/pedidos/${r.body.pedidoId}/anexos/..%2Fpedido.json`).set('cookie', cookie)).status).toBe(404);
+  });
+
+  it('admin cria usuário operador; sem login a API do painel recusa', async () => {
+    const { a, userStore } = app();
+    expect((await request(a).get('/formulario/admin/api/pedidos')).status).toBe(401);
+    userStore.changePassword('admin', 'admin', 'admin-forte1');
+    const { cookie } = await entrar(a, 'admin', 'admin-forte1');
+    const c = await request(a).post('/formulario/admin/api/usuarios').set('cookie', cookie).send({ usuario: 'maria', senha: 'temporaria1', perfil: 'operador' });
+    expect(c.status).toBe(200);
+    expect(c.body.usuarios.find((u) => u.username === 'maria')).toMatchObject({ role: 'operador', mustChangePassword: true });
+    expect((await request(a).delete('/formulario/admin/api/usuarios/admin').set('cookie', cookie)).status).toBe(400); // não remove a si mesmo
+  });
+
   it('com chave de acesso, a API exige o link', async () => {
     const { a, catalogStore } = app();
     const c = catalogStore.get();

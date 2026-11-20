@@ -346,7 +346,7 @@ function etapaPortabilidade() {
     <li>Informe corretamente os dados do titular e os números.</li>
     <li>Apenas números fixos podem ser portados.</li></ol>`)}
   ${opcoes({ path: 'querPortabilidade', label: 'Deseja fazer portabilidade de algum número?', itens: [{ valor: 'true', texto: 'Sim' }, { valor: 'false', texto: 'Não' }], tipoValor: 'bool' })}
-  ${p.querPortabilidade ? `${aviso('info', 'Cada bloco (cidade/operadora) vira um card separado no Bitrix24.')}${blocos}
+  ${p.querPortabilidade ? `${aviso('info', 'Portabilidade no mesmo estado do endereço de instalação entra no card do Neo Vox. Portabilidade de outro estado vira um card separado no Bitrix24 (um por estado).')}${blocos}
     <p>${botaoCopiar('add-port', '+ Adicionar portabilidade')}</p>
     ${erroDe('portabilidade') ? aviso('erro', esc(erroDe('portabilidade'))) : calc.portabilidade ? aviso('ok', `Total: ${calc.portabilidade.numeros} número(s) a portar de ${calc.vox?.totalNumeros ?? 0} contratados (linhas + adicionais).`) : ''}` : ''}`;
 }
@@ -398,10 +398,12 @@ function etapaResumo() {
   if (state.resultado) {
     const r = state.resultado;
     return `<h2 class="titulo">Pedido enviado</h2>
-    ${aviso('ok', `Pedido <b>${esc(r.pedidoId)}</b> gravado no Bitrix24.`)}
-    <h3>Cards criados</h3>
-    <ul class="cards-criados">${r.cards.map((c) => `<li>${c.url ? `<a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.titulo)} (#${c.id})</a>` : `${esc(c.titulo)} (#${c.id})`}</li>`).join('')}</ul>
-    <p class="ajuda">${r.email?.enviado ? `O resumo foi enviado para ${esc(state.pedido.origem.email)}.` : 'O resumo por e-mail não foi enviado (e-mail ainda não configurado no servidor). O resumo está na linha do tempo de cada card.'}</p>
+    ${r.bitrixFalhou
+      ? aviso('alerta', `Pedido <b>${esc(r.pedidoId)}</b> recebido e salvo. O Bitrix24 não respondeu agora; o administrativo vai concluir a gravação pelo painel. <b>Não precisa enviar de novo.</b>`)
+      : aviso('ok', `Pedido <b>${esc(r.pedidoId)}</b> gravado no Bitrix24.`)}
+    ${r.cards.length ? `<h3>Cards criados</h3>
+    <ul class="cards-criados">${r.cards.map((c) => `<li>${c.url ? `<a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.titulo)} (#${c.id})</a>` : `${esc(c.titulo)} (#${c.id})`}</li>`).join('')}</ul>` : ''}
+    <p class="ajuda">${r.email?.enviado ? `O resumo foi enviado para ${esc(state.pedido.origem.email)}.` : 'O resumo por e-mail não pôde ser enviado agora. O pedido está salvo no painel do administrativo.'}</p>
     <p><button type="button" class="pri" data-acao="novo">Fazer outro pedido</button></p>`;
   }
   const pedido = pedidoParaEnvio();
