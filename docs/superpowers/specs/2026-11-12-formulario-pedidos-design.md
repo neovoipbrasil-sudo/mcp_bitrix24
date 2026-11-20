@@ -229,3 +229,9 @@ O bot não existe como serviço no Easypanel, então o formulário roda como ser
 - Status internos: Novo, Em análise, Contrato enviado, Concluído, Cancelado. Histórico registra quem fez o quê.
 - Exportação: CSV (separador ";", UTF-8 com BOM) da lista filtrada.
 - Perfil `operador` adicionado ao cadastro de usuários (`src/reports/report-users.js`), com `setRole` que não deixa o sistema sem administrador.
+
+## E-mail via Resend (2026-11-20)
+- O servidor da hospedagem (mail.neovoip.com.br) aceitava (250 OK) e entregava só dentro do domínio; para fora não entregava.
+- Solução: Resend. SMTP_HOST=smtp.resend.com, SMTP_PORT=465, SMTP_USER=resend, SMTP_PASS=API key (Sending access, só neovoip.com.br). Remetente segue pedidos@neovoip.com.br. FUNCIONANDO.
+- DNS: `send.neovoip.com.br` já era CNAME de outro serviço (rmta.net), por isso o Resend precisa de Return-Path próprio (ver painel do Resend). DKIM em `resend._domainkey`.
+- Rastreio de entrega: aba Logs do Resend.
