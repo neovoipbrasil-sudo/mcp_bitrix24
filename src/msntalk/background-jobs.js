@@ -52,7 +52,10 @@ export function startMsnTalkBackgroundJobs({
   // contatos adicionais (só os telefones realmente pendentes, não todo
   // lead/negócio aberto do portal), então pode rodar bem mais seguido.
   const reconcilePendingClient = new Bitrix24Client(webhookUrl, { minDelay: 1000 });
-  const RECONCILE_PENDING_INTERVAL_MS = 15 * 60 * 1000;
+  // 5 min: além de recuperar telefones corrigidos, é o que leva a conversa
+  // iniciada pelo formulário do anúncio para o card do tráfego pago assim
+  // que ele é criado.
+  const RECONCILE_PENDING_INTERVAL_MS = 5 * 60 * 1000;
   let reconcilePendingInFlight = false;
   async function runReconcilePending() {
     if (reconcilePendingInFlight) return;

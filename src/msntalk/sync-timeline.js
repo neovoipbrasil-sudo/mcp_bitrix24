@@ -26,14 +26,36 @@ const FORM_SUBMISSION_TRIGGER = 'Olá! Preenchi seu formulário e gostaria de sa
 // (crm.status.list, ENTITY_ID=STATUS).
 const INBOUND_LEAD_STATUS_ID = 'UC_33H9R1';
 
-async function createLeadFromSiteMessage(event) {
+// Lead criado pela integração precisa de um Contato vinculado: sem ele o
+// card fica só com o telefone no próprio lead, a conversa aparece "solta"
+// (sem contato) e, quando o mesmo cliente chega por outra integração com
+// contato, a conversa passa a ser gravada nos dois cards. Reaproveita um
+// contato que já tenha esse telefone antes de criar um novo.
+async function resolveContactId(client, { phone, contactFields }) {
+  if (phone) {
+    const res = await client.call('crm.duplicate.findbycomm', { type: 'PHONE', values: [phone] });
+    const existing = res.result?.CONTACT ?? [];
+    if (existing.length > 0) return Number(existing[0]);
+  }
+  const { created_id: contactId } = await crmCreate({ entity: 'contact', fields: contactFields });
+  return contactId;
+}
+
+async function createLeadFromSiteMessage(event, client) {
+  const name = event.contactName || 'Contato via site';
+  const phoneField = [{ VALUE: event.phone, VALUE_TYPE: 'WORK' }];
+  const contactId = await resolveContactId(client, {
+    phone: event.phone,
+    contactFields: { NAME: name, PHONE: phoneField },
+  });
   const { created_id: leadId } = await crmCreate({
     entity: 'lead',
     fields: {
       TITLE: `Site — ${event.contactName || event.phone}`,
-      NAME: event.contactName || 'Contato via site',
-      PHONE: [{ VALUE: event.phone, VALUE_TYPE: 'WORK' }],
+      NAME: name,
+      PHONE: phoneField,
       STATUS_ID: INBOUND_LEAD_STATUS_ID,
+      CONTACT_ID: contactId,
     },
   });
 
@@ -88,7 +110,10 @@ async function mergeIntoExistingLead(client, { existingLeadId, newLeadId }) {
   return true;
 }
 
-async function createLeadFromFormSubmission(event, client) {
+// Usada só como plano B (ver reconcile-pending.js) ou sem pendingStore: o
+// lead de formulário é criado normalmente pela integração do tráfego pago,
+// já com contato.
+export async function createLeadFromFormSubmission(event, client) {
   const formFields = parseFormFields(event.text);
   const fullName = formFields['Full name'] || event.contactName || 'Contato via formulário';
   const [firstName, ...lastNameParts] = fullName.split(' ');
@@ -106,6 +131,10 @@ async function createLeadFromFormSubmission(event, client) {
   if (email) fields.EMAIL = [{ VALUE: email, VALUE_TYPE: 'WORK' }];
   if (formFields['Job title']) fields.POST = formFields['Job title'];
   if (formFields['Company name']) fields.COMPANY_TITLE = formFields['Company name'];
+
+  const contactFields = { NAME: fields.NAME, PHONE: fields.PHONE };
+  for (const key of ['LAST_NAME', 'EMAIL', 'POST']) if (fields[key]) contactFields[key] = fields[key];
+  fields.CONTACT_ID = await resolveContactId(client, { phone, contactFields });
 
   const { created_id: leadId } = await crmCreate({ entity: 'lead', fields });
 
@@ -224,9 +253,32 @@ export async function syncTimeline({ event, client, auditLog, ticketUrlTemplate,
     const trimmedText = event.text?.trim() ?? '';
     let created = null;
     if (NEW_LEAD_TRIGGERS.includes(trimmedText)) {
-      created = await createLeadFromSiteMessage(event);
+      created = await createLeadFromSiteMessage(event, client);
     } else if (trimmedText.includes(FORM_SUBMISSION_TRIGGER)) {
-      created = await createLeadFromFormSubmission(event, client);
+      if (pendingStore) {
+        // O formulário do anúncio também chega pela integração do tráfego
+        // pago (Bravo Ads), que cria o lead com contato minutos depois.
+        // Criar um lead aqui gerava um card duplicado, sem contato, que
+        // passava a receber a mesma conversa (12 de 12 casos entre 19 e
+        // 22/11/2026). Agora a mensagem fica pendente e entra no card do
+        // tráfego pago assim que ele existir (próxima mensagem ou
+        // reconcile-pending.js); se ele não aparecer no prazo,
+        // reconcile-pending.js cria o lead como plano B.
+        pendingStore.markFormSubmission(event.phone, {
+          text: event.text,
+          contactName: event.contactName ?? null,
+          phone: event.phone,
+          ticketId: event.ticketId,
+          receivedAt: Date.now(),
+        });
+        auditLog.logAction({
+          tool: 'msntalk-sync',
+          params: { phone: event.phone, ticketId: event.ticketId },
+          result: 'awaiting-paid-lead',
+        });
+      } else {
+        created = await createLeadFromFormSubmission(event, client);
+      }
     }
     if (created) {
       groups = [created];

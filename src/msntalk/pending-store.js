@@ -26,19 +26,42 @@ export function createPendingStore({ filePath }) {
 
   // Registros antigos guardavam um array de linhas direto (sem ticketId).
   // Normaliza pra sempre trabalhar com { ticketId, lines }.
+  // `form` (opcional) marca que a conversa começou com a mensagem de
+  // formulário preenchido do anúncio — ver markFormSubmission.
   function normalize(entry) {
     if (!entry) return { ticketId: null, lines: [] };
     if (Array.isArray(entry)) return { ticketId: null, lines: entry };
-    return { ticketId: entry.ticketId ?? null, lines: entry.lines ?? [] };
+    const normalized = { ticketId: entry.ticketId ?? null, lines: entry.lines ?? [] };
+    if (entry.form) normalized.form = entry.form;
+    return normalized;
   }
 
   return {
     appendPending(phone, line, ticketId) {
       const data = load();
-      const { lines } = normalize(data[phone]);
-      lines.push(line);
-      data[phone] = { ticketId: ticketId ?? null, lines };
+      const entry = normalize(data[phone]);
+      entry.lines.push(line);
+      data[phone] = { ...entry, ticketId: ticketId ?? null };
       persist(data);
+    },
+
+    // Guarda os dados da mensagem de formulário preenchido (texto, nome,
+    // telefone, ticket e quando chegou) de um telefone ainda sem card no
+    // CRM. O card normalmente é criado pela integração do tráfego pago logo
+    // depois; reconcile-pending.js só cria um lead por conta própria se ele
+    // não aparecer dentro do prazo. Só a primeira mensagem de formulário
+    // conta — uma repetição não reinicia o prazo.
+    markFormSubmission(phone, form) {
+      const data = load();
+      const entry = normalize(data[phone]);
+      if (entry.form) return;
+      data[phone] = { ...entry, form };
+      persist(data);
+    },
+
+    // Mesmo retorno de takePending, mas sem remover nada.
+    getPending(phone) {
+      return normalize(load()[phone]);
     },
 
     // Retorna { ticketId, lines } com o que está pendente do telefone e

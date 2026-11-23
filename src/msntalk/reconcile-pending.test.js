@@ -145,4 +145,64 @@ describe('reconcilePending', () => {
       comment: expect.stringContaining('[01/09 10:00] Cliente: já sincronizado antes'),
     });
   });
+
+  describe('form-submission fallback', () => {
+    const PHONE = '5516997009192';
+    const RECEIVED_AT = Date.parse('2026-11-23T12:00:00Z');
+    const form = {
+      text: 'Olá! Preenchi seu formulário e gostaria de saber mais sobre sua empresa.\n\nFull name: Sonia Garcia',
+      contactName: 'Sonia',
+      phone: PHONE,
+      ticketId: 115600,
+      receivedAt: RECEIVED_AT,
+    };
+    function makeFormPendingStore() {
+      const entry = { ticketId: 115600, lines: ['[23/11 09:00] Sonia: Olá! Preenchi seu formulário'], form };
+      const store = makePendingStore({ [PHONE]: entry });
+      store.getPending = vi.fn(() => entry);
+      return store;
+    }
+    const client = { call: vi.fn(() => Promise.resolve({ result: {} })) };
+
+    beforeEach(() => { crmCreateMock.mockReset(); });
+
+    it('keeps waiting for the paid-traffic lead while still inside the deadline', async () => {
+      findCrmEntityMock.mockResolvedValueOnce(null);
+      const pendingStore = makeFormPendingStore();
+      const auditLog = { logAction: vi.fn() };
+
+      const result = await reconcilePending({
+        client, pendingStore, threadStore: makeThreadStore(), auditLog, now: RECEIVED_AT + 30 * 60 * 1000,
+      });
+
+      expect(result).toEqual({ reconciled: 0 });
+      expect(crmCreateMock).not.toHaveBeenCalled();
+      expect(pendingStore.takePending).not.toHaveBeenCalled();
+    });
+
+    it('creates the lead with a linked contact once the deadline passes without a paid-traffic lead', async () => {
+      findCrmEntityMock.mockResolvedValueOnce(null);
+      crmCreateMock.mockResolvedValueOnce({ created_id: 8800 }).mockResolvedValueOnce({ created_id: 9100 });
+      const pendingStore = makeFormPendingStore();
+      const threadStore = makeThreadStore();
+      const auditLog = { logAction: vi.fn() };
+
+      const result = await reconcilePending({
+        client, pendingStore, threadStore, auditLog, now: RECEIVED_AT + 2 * 60 * 60 * 1000,
+      });
+
+      expect(result).toEqual({ reconciled: 1 });
+      expect(crmCreateMock).toHaveBeenCalledWith(expect.objectContaining({ entity: 'contact' }));
+      expect(crmCreateMock).toHaveBeenCalledWith(expect.objectContaining({
+        entity: 'lead',
+        fields: expect.objectContaining({ TITLE: 'Formulário — Sonia Garcia', CONTACT_ID: 8800 }),
+      }));
+      expect(timelineAddMock).toHaveBeenCalledWith(expect.objectContaining({ entity: 'lead', entity_id: 9100 }));
+      expect(auditLog.logAction).toHaveBeenCalledWith({
+        tool: 'msntalk-sync',
+        params: { phone: PHONE, ticketId: 115600, entity_id: 9100 },
+        result: 'lead-created-fallback',
+      });
+    });
+  });
 });
