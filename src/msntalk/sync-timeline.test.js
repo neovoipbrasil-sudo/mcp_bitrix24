@@ -294,18 +294,22 @@ describe('syncTimeline', () => {
 
   it('creates a Lead in the Inbound stage when an unmatched phone sends the exact site opening message', async () => {
     findCrmEntityMock.mockResolvedValueOnce(null);
-    crmCreateMock.mockResolvedValueOnce({ created_id: 9002 }); // lead
+    crmCreateMock.mockResolvedValueOnce({ created_id: 8800 }).mockResolvedValueOnce({ created_id: 9002 }); // lead
 
     const threadStore = makeThreadStore();
     const auditLog = { logAction: vi.fn() };
 
     const result = await syncTimeline({
       event: baseEvent({ text: 'Olá, vim pelo site e gostaria de mais informações.' }),
-      client: {},
+      client: makeFormClient(),
       auditLog,
       threadStore,
     });
 
+    expect(crmCreateMock).toHaveBeenCalledWith({
+      entity: 'contact',
+      fields: { NAME: 'Maria Souza', PHONE: [{ VALUE: '556121090177', VALUE_TYPE: 'WORK' }] },
+    });
     expect(crmCreateMock).toHaveBeenCalledWith({
       entity: 'lead',
       fields: {
@@ -313,6 +317,7 @@ describe('syncTimeline', () => {
         NAME: 'Maria Souza',
         PHONE: [{ VALUE: '556121090177', VALUE_TYPE: 'WORK' }],
         STATUS_ID: 'UC_33H9R1',
+        CONTACT_ID: 8800,
       },
     });
     expect(result).toEqual({ matched: true, groups: [{ entity: 'lead', entity_ids: [9002] }] });
@@ -330,7 +335,7 @@ describe('syncTimeline', () => {
 
   it('creates a form-submission Lead even when the trigger phrase is preceded by other text', async () => {
     findCrmEntityMock.mockResolvedValueOnce(null);
-    crmCreateMock.mockResolvedValueOnce({ created_id: 9102 });
+    crmCreateMock.mockResolvedValueOnce({ created_id: 8800 }).mockResolvedValueOnce({ created_id: 9102 });
     const threadStore = makeThreadStore();
     const auditLog = { logAction: vi.fn() };
     const formText = [
@@ -406,7 +411,7 @@ describe('syncTimeline', () => {
 
   it('creates a Lead filling fields parsed from a form-submission message', async () => {
     findCrmEntityMock.mockResolvedValueOnce(null);
-    crmCreateMock.mockResolvedValueOnce({ created_id: 9100 });
+    crmCreateMock.mockResolvedValueOnce({ created_id: 8800 }).mockResolvedValueOnce({ created_id: 9100 });
 
     const threadStore = makeThreadStore();
     const auditLog = { logAction: vi.fn() };
@@ -439,6 +444,7 @@ describe('syncTimeline', () => {
         EMAIL: [{ VALUE: 'soniagarcia11695@gmail.com', VALUE_TYPE: 'WORK' }],
         POST: 'Vendedora',
         COMPANY_TITLE: 'Autônoma',
+        CONTACT_ID: 8800,
       },
     });
     expect(result).toEqual({ matched: true, groups: [{ entity: 'lead', entity_ids: [9100] }] });
@@ -451,7 +457,7 @@ describe('syncTimeline', () => {
 
   it('falls back to the WhatsApp phone and contact name when the form message omits those fields', async () => {
     findCrmEntityMock.mockResolvedValueOnce(null);
-    crmCreateMock.mockResolvedValueOnce({ created_id: 9101 });
+    crmCreateMock.mockResolvedValueOnce({ created_id: 8800 }).mockResolvedValueOnce({ created_id: 9101 });
     const threadStore = makeThreadStore();
     const auditLog = { logAction: vi.fn() };
     const formText = 'Olá! Preenchi seu formulário e gostaria de saber mais sobre sua empresa.\n\nEmail: foo@bar.com';
@@ -472,13 +478,14 @@ describe('syncTimeline', () => {
         COMMENTS: formText,
         PHONE: [{ VALUE: '556121090177', VALUE_TYPE: 'WORK' }],
         EMAIL: [{ VALUE: 'foo@bar.com', VALUE_TYPE: 'WORK' }],
+        CONTACT_ID: 8800,
       },
     });
   });
 
   it('merges the new lead into a pre-existing duplicate found by phone, keeping the pre-existing lead', async () => {
     findCrmEntityMock.mockResolvedValueOnce(null);
-    crmCreateMock.mockResolvedValueOnce({ created_id: 9100 });
+    crmCreateMock.mockResolvedValueOnce({ created_id: 8800 }).mockResolvedValueOnce({ created_id: 9100 });
     const threadStore = makeThreadStore();
     const auditLog = { logAction: vi.fn() };
     const client = makeFormClient({ PHONE: { LEAD: [500] } });
@@ -493,7 +500,7 @@ describe('syncTimeline', () => {
 
   it('merges the new lead into a pre-existing duplicate found by email', async () => {
     findCrmEntityMock.mockResolvedValueOnce(null);
-    crmCreateMock.mockResolvedValueOnce({ created_id: 9100 });
+    crmCreateMock.mockResolvedValueOnce({ created_id: 8800 }).mockResolvedValueOnce({ created_id: 9100 });
     const threadStore = makeThreadStore();
     const auditLog = { logAction: vi.fn() };
     const client = makeFormClient({ EMAIL: { LEAD: [777] } });
@@ -507,7 +514,7 @@ describe('syncTimeline', () => {
 
   it('keeps the newly created lead when crm.entity.mergeBatch reports CONFLICT instead of merging automatically', async () => {
     findCrmEntityMock.mockResolvedValueOnce(null);
-    crmCreateMock.mockResolvedValueOnce({ created_id: 9100 });
+    crmCreateMock.mockResolvedValueOnce({ created_id: 8800 }).mockResolvedValueOnce({ created_id: 9100 });
     const threadStore = makeThreadStore();
     const auditLog = { logAction: vi.fn() };
     const client = {
@@ -526,7 +533,7 @@ describe('syncTimeline', () => {
 
   it('does not search for duplicates when the form message has neither phone nor email to check', async () => {
     findCrmEntityMock.mockResolvedValueOnce(null);
-    crmCreateMock.mockResolvedValueOnce({ created_id: 9100 });
+    crmCreateMock.mockResolvedValueOnce({ created_id: 8800 }).mockResolvedValueOnce({ created_id: 9100 });
     const threadStore = makeThreadStore();
     const auditLog = { logAction: vi.fn() };
     const client = makeFormClient();
@@ -589,8 +596,62 @@ describe('syncTimeline', () => {
         delete data[phone];
         return pending;
       }),
+      markFormSubmission: vi.fn(),
     };
   }
+
+  it('waits for the paid-traffic lead instead of creating a duplicate when a form-submission message has no match', async () => {
+    findCrmEntityMock.mockResolvedValueOnce(null);
+    const threadStore = makeThreadStore();
+    const pendingStore = makePendingStore();
+    const auditLog = { logAction: vi.fn() };
+    const formText = 'Olá! Preenchi seu formulário e gostaria de saber mais sobre sua empresa.\n\nFull name: Sonia Garcia';
+
+    const result = await syncTimeline({
+      event: baseEvent({ text: formText }),
+      client: makeFormClient(),
+      auditLog,
+      threadStore,
+      pendingStore,
+    });
+
+    expect(result).toEqual({ matched: false });
+    expect(crmCreateMock).not.toHaveBeenCalled();
+    expect(timelineAddMock).not.toHaveBeenCalled();
+    expect(pendingStore.markFormSubmission).toHaveBeenCalledWith('556121090177', {
+      text: formText,
+      contactName: 'Maria Souza',
+      phone: '556121090177',
+      ticketId: 92315,
+      receivedAt: expect.any(Number),
+    });
+    expect(pendingStore.appendPending).toHaveBeenCalledWith('556121090177', expect.stringContaining('Preenchi seu formulário'), 92315);
+    expect(auditLog.logAction).toHaveBeenCalledWith({
+      tool: 'msntalk-sync',
+      params: { phone: '556121090177', ticketId: 92315 },
+      result: 'awaiting-paid-lead',
+    });
+  });
+
+  it('reuses an existing contact with the same phone instead of creating another one', async () => {
+    findCrmEntityMock.mockResolvedValueOnce(null);
+    crmCreateMock.mockResolvedValueOnce({ created_id: 9002 });
+    const threadStore = makeThreadStore();
+    const auditLog = { logAction: vi.fn() };
+
+    await syncTimeline({
+      event: baseEvent({ text: 'Olá, vim pelo site e gostaria de mais informações.' }),
+      client: makeFormClient({ PHONE: { CONTACT: [321] } }),
+      auditLog,
+      threadStore,
+    });
+
+    expect(crmCreateMock).toHaveBeenCalledTimes(1);
+    expect(crmCreateMock).toHaveBeenCalledWith(expect.objectContaining({
+      entity: 'lead',
+      fields: expect.objectContaining({ CONTACT_ID: 321 }),
+    }));
+  });
 
   it('stores the message text in pendingStore instead of discarding it when there is no match', async () => {
     findCrmEntityMock.mockResolvedValueOnce(null);
