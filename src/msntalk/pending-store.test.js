@@ -70,4 +70,17 @@ describe('pending-store', () => {
       lines: ['Cliente: oi', 'Cliente: tudo bem?'],
     });
   });
+
+  it('keeps the form-submission marker across later messages and returns it once taken', () => {
+    const store = createPendingStore({ filePath: path.join(dir, 'pending.json') });
+    const form = { text: 'Preenchi seu formulário', phone: '5511999999999', ticketId: 1, receivedAt: 1000 };
+    store.appendPending('5511999999999', 'Cliente: Preenchi seu formulário', 1);
+    store.markFormSubmission('5511999999999', form);
+    store.markFormSubmission('5511999999999', { ...form, receivedAt: 9999 });
+    store.appendPending('5511999999999', 'Cliente: oi', 1);
+
+    expect(store.getPending('5511999999999')).toEqual({ ticketId: 1, lines: ['Cliente: Preenchi seu formulário', 'Cliente: oi'], form });
+    expect(store.takePending('5511999999999')).toEqual({ ticketId: 1, lines: ['Cliente: Preenchi seu formulário', 'Cliente: oi'], form });
+    expect(store.getPending('5511999999999')).toEqual({ ticketId: null, lines: [] });
+  });
 });
