@@ -38,6 +38,13 @@ export const mask = {
     if (d && !d.startsWith('55')) d = '55' + d;
     return applyPattern(d.slice(0, 13), '+00 (00) 0 0000-0000');
   },
+  // Números de portabilidade: 8 ou 9 dígitos depois do DDD (nunca mais que 9).
+  phonePort: (v) => {
+    let d = onlyDigits(v);
+    if (d && !d.startsWith('55')) d = '55' + d;
+    d = d.slice(0, 13);
+    return applyPattern(d, d.length === 13 ? '+00 (00) 0 0000-0000' : '+00 (00) 0000-0000');
+  },
 };
 
 // Telefone gravado no Bitrix: só dígitos, sem "+" (ex.: 5561999999999).
@@ -46,6 +53,14 @@ export const phoneDigits = (v) => {
   if (d && !d.startsWith('55')) d = '55' + d;
   return d;
 };
+
+// Telefone como vai para os campos do card no Bitrix: "55 (61) 9 9999-9999" ou, fixo de 8 dígitos, "55 (61) 3333-4444".
+export function phoneCrm(v) {
+  const d = phoneDigits(v);
+  if (d.length === 13) return `${d.slice(0, 2)} (${d.slice(2, 4)}) ${d[4]} ${d.slice(5, 9)}-${d.slice(9)}`;
+  if (d.length === 12) return `${d.slice(0, 2)} (${d.slice(2, 4)}) ${d.slice(4, 8)}-${d.slice(8)}`;
+  return d;
+}
 
 export function isValidCPF(v) {
   const d = onlyDigits(v);
@@ -76,6 +91,13 @@ export function isValidCNPJ(v) {
 export function isValidPhone(v) {
   const d = phoneDigits(v);
   if (d.length !== 13 || !d.startsWith('55')) return false;
+  return DDDS.includes(Number(d.slice(2, 4)));
+}
+
+// Portabilidade: DDI 55 + DDD válido + 8 ou 9 dígitos.
+export function isValidPhonePort(v) {
+  const d = phoneDigits(v);
+  if (!(d.length === 12 || d.length === 13) || !d.startsWith('55')) return false;
   return DDDS.includes(Number(d.slice(2, 4)));
 }
 
@@ -130,6 +152,7 @@ export const MESSAGES = {
   cpf: 'CPF inválido.',
   cnpj: 'CNPJ inválido.',
   phone: 'Telefone inválido. Use +55 (DDD) 9 XXXX-XXXX.',
+  phonePort: 'Número inválido. Use +55 (DDD) e 8 ou 9 dígitos.',
   email: 'E-mail inválido.',
   date: 'Data inválida (DD/MM/AAAA).',
   birth: 'Data inválida: a pessoa precisa ter 18 anos ou mais.',
@@ -146,6 +169,7 @@ export function validateValue(type, value, { required = true } = {}) {
     case 'cpf': return isValidCPF(value) ? null : MESSAGES.cpf;
     case 'cnpj': return isValidCNPJ(value) ? null : MESSAGES.cnpj;
     case 'phone': return isValidPhone(value) ? null : MESSAGES.phone;
+    case 'phonePort': return isValidPhonePort(value) ? null : MESSAGES.phonePort;
     case 'email': {
       const fix = emailTypoSuggestion(value);
       if (fix) return `E-mail parece ter erro de digitação. Você quis dizer ${fix}?`;

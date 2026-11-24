@@ -117,6 +117,7 @@ export function resumir(r) {
     clienteNome: c.tipo === 'PF' ? c.pf?.nome : c.pj?.razaoSocial,
     clienteDoc: c.tipo === 'PF' ? c.pf?.cpf : c.pj?.cnpj,
     produtos: p.produtos,
+    tipoPedido: p.tipoPedido === 'aditivo' ? 'aditivo' : 'novo',
     mensal: r.calculo?.mensal,
     adesao: r.calculo?.adesao,
     totalContrato: r.calculo?.totalContrato,

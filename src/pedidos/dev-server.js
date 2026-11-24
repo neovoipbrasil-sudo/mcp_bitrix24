@@ -12,7 +12,12 @@ import { createPedidosStore } from './pedidos-store.js';
 const dir = mkdtempSync(path.join(os.tmpdir(), 'formulario-dev-'));
 const PORT = Number(process.env.PORT || 3410);
 const produtosExemplo = [{ ID: '704', NAME: 'Neo Vox Full Nuvem Ilimitado 5 — 24 meses', PRICE: '141.8' }, { ID: '130', NAME: 'Portabilidade de Números', PRICE: '9.5' }];
-const fakeClient = { portal: 'exemplo.bitrix24.com.br', call: async (m) => ({ result: m === 'crm.product.list' ? produtosExemplo : [] }) };
+// No teste, o CNPJ 11.222.333/0001-81 conta como cliente já cadastrado (para testar o aditivo).
+const fakeClient = { portal: 'exemplo.bitrix24.com.br', call: async (m, p) => {
+  if (m === 'crm.product.list') return { result: produtosExemplo };
+  if (m === 'crm.requisite.list' && String(p?.filter?.RQ_CNPJ || '').replace(/\D/g, '') === '11222333000181') return { result: [{ ID: 1, ENTITY_ID: 1 }] };
+  return { result: [] };
+} };
 
 // Usuário de teste do painel do catálogo: admin / teste1234 (só neste servidor local).
 const userStore = createReportUserStore({ filePath: path.join(dir, 'report-users.json') });

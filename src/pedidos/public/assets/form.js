@@ -16,8 +16,10 @@ function enderecoVazio() { return { cep: '', logradouro: '', numero: '', complem
 function novoPedido() {
   return {
     origem: { tipo: '', id: '', cnpj: '', nome: '', email: '', celular: '' },
+    tipoPedido: '',
     cliente: {
       tipo: '',
+      responsavelAditivo: pessoaVazia(),
       pf: { nome: '', cpf: '', nascimento: '', celular: '', email: '', endereco: enderecoVazio() },
       pj: { cnpj: '', razaoSocial: '', nomeFantasia: '', dataFundacao: '', indicadorIE: '', inscricaoEstadual: '', inscricaoMunicipal: '', simples: '', retencaoISS: '',
         socios: [{ nome: '', cpf: '', nascimento: '', celular: '', email: '' }], endereco: enderecoVazio() },
@@ -39,7 +41,8 @@ function novoBlocoPortabilidade() {
     tecnico: pessoaVazia(), fatura: [] };
 }
 
-const state = { pedido: novoPedido(), etapa: 0, erros: {}, envioId: uid(), enviando: false, resultado: null };
+const state = { pedido: novoPedido(), etapa: 0, erros: {}, envioId: uid(), enviando: false, resultado: null, clienteBitrix: null };
+const ehAditivo = () => state.pedido.tipoPedido === 'aditivo';
 
 // ------------------------------------------------------------------ utilidades de caminho
 function get(obj, p) { return p.split('.').reduce((o, k) => (o == null ? undefined : o[k]), obj); }
@@ -69,15 +72,15 @@ function carregarRascunho() {
 function limparRascunho() { try { localStorage.removeItem(RASCUNHO); } catch { /* ignora */ } }
 
 // ------------------------------------------------------------------ componentes
-const TIPO_MASCARA = { cpf: mask.cpf, cnpj: mask.cnpj, phone: mask.phone, cep: mask.cep, date: mask.date, birth: mask.date };
-const PLACEHOLDER = { cpf: '000.000.000-00', cnpj: '00.000.000/0000-00', phone: '+55 (61) 9 9999-9999', cep: '00000-000', date: 'DD/MM/AAAA', birth: 'DD/MM/AAAA', ddd: '61', email: 'nome@empresa.com.br' };
+const TIPO_MASCARA = { cpf: mask.cpf, cnpj: mask.cnpj, phone: mask.phone, phonePort: mask.phonePort, cep: mask.cep, date: mask.date, birth: mask.date };
+const PLACEHOLDER = { cpf: '000.000.000-00', cnpj: '00.000.000/0000-00', phone: '+55 (61) 9 9999-9999', phonePort: '+55 (61) 3333-4444', cep: '00000-000', date: 'DD/MM/AAAA', birth: 'DD/MM/AAAA', ddd: '61', email: 'nome@empresa.com.br' };
 
 function erroDe(path) { return state.erros[path]; }
 
 function campo({ path, label, tipo = 'text', opcional = false, ajuda = '', readonly = false, extra = '', inputmode = '' }) {
   const v = get(state.pedido, path) ?? '';
   const err = erroDe(path);
-  const im = inputmode || ({ cpf: 'numeric', cnpj: 'numeric', phone: 'tel', cep: 'numeric', date: 'numeric', birth: 'numeric', ddd: 'numeric', int: 'numeric', email: 'email' }[tipo] || 'text');
+  const im = inputmode || ({ cpf: 'numeric', cnpj: 'numeric', phone: 'tel', phonePort: 'tel', cep: 'numeric', date: 'numeric', birth: 'numeric', ddd: 'numeric', int: 'numeric', email: 'email' }[tipo] || 'text');
   const id = 'f_' + path.replace(/\./g, '_');
   const tag = tipo === 'textarea'
     ? `<textarea id="${id}" data-path="${path}" data-tipo="${tipo}" ${opcional ? 'data-opcional="1"' : ''}>${esc(v)}</textarea>`
@@ -165,7 +168,7 @@ const temPhone = () => ['phone', 'ambos'].includes(state.pedido.produtos);
 
 const ETAPAS = [
   { id: 'origem', titulo: 'Quem preenche', prefixos: ['origem'], render: etapaOrigem },
-  { id: 'cliente', titulo: 'Cliente', prefixos: ['cliente', 'arquivos'], render: etapaCliente },
+  { id: 'cliente', titulo: 'Cliente', prefixos: ['tipoPedido', 'cliente', 'arquivos'], render: etapaCliente },
   { id: 'produtos', titulo: 'Produtos', prefixos: ['produtos', 'fidelidade'], render: etapaProdutos },
   { id: 'vox', titulo: 'Neo Vox', prefixos: ['vox'], mostrar: temVox, render: etapaVox },
   { id: 'port', titulo: 'Portabilidade', prefixos: ['portabilidades', 'portabilidade', 'querPortabilidade'], mostrar: temVox, render: etapaPortabilidade },
@@ -203,8 +206,30 @@ function contatosHtml() {
   <div class="linha">${campo({ path: 'cliente.contatos.testemunha.nome', label: 'Nome completo' })}${campo({ path: 'cliente.contatos.testemunha.email', label: 'E-mail', tipo: 'email' })}</div>`;
 }
 
+function etapaClienteAditivo() {
+  const c = state.pedido.cliente;
+  const doc = c.tipo === 'PF'
+    ? `<div class="linha">${campo({ path: 'cliente.pf.cpf', label: 'CPF do cliente', tipo: 'cpf', extra: 'data-busca="PF"' })}${campo({ path: 'cliente.pf.nome', label: 'Nome completo do cliente' })}</div>`
+    : `<div class="linha">${campo({ path: 'cliente.pj.cnpj', label: 'CNPJ do cliente', tipo: 'cnpj', extra: 'data-busca="PJ"' })}${campo({ path: 'cliente.pj.razaoSocial', label: 'Razão social' })}</div>`;
+  return `${aviso('info', 'Aditivo: o cliente já precisa estar cadastrado no Bitrix24. Informe o documento para localizarmos o cadastro e preencha só os itens novos nas próximas etapas.')}
+  <h3>Cliente</h3>
+  ${avisos.cliente || ''}${erroDe('clienteBitrix') ? aviso('erro', esc(erroDe('clienteBitrix'))) : ''}
+  ${doc}
+  <h3>Responsável pelo aditivo</h3>
+  <p class="ajuda">Quem assina ou responde pelo aditivo do lado do cliente.</p>
+  ${pessoa('cliente.responsavelAditivo')}`;
+}
+
 function etapaCliente() {
   const c = state.pedido.cliente;
+  const tipoPedido = opcoes({ path: 'tipoPedido', label: 'É um contrato novo ou um aditivo (cliente que já tem contrato)?', itens: [{ valor: 'novo', texto: 'Contrato novo' }, { valor: 'aditivo', texto: 'Aditivo' }] });
+  const tipoCliente = opcoes({ path: 'cliente.tipo', label: 'O cliente é Pessoa Física (CPF) ou Pessoa Jurídica (CNPJ)?', itens: [{ valor: 'PF', texto: 'Pessoa Física (CPF)' }, { valor: 'PJ', texto: 'Pessoa Jurídica (CNPJ)' }] });
+  if (!state.pedido.tipoPedido) {
+    return `<h2 class="titulo">Cliente</h2><p class="sub">Dados para o contrato e o cadastro no Bitrix24.</p>${tipoPedido}`;
+  }
+  if (ehAditivo()) {
+    return `<h2 class="titulo">Cliente</h2><p class="sub">Aditivo de contrato.</p>${tipoPedido}${tipoCliente}${c.tipo ? etapaClienteAditivo() : ''}`;
+  }
   let corpo = '';
   if (c.tipo === 'PF') {
     corpo = `<h3>Dados do cliente</h3>
@@ -241,7 +266,7 @@ function etapaCliente() {
   }
   return `<h2 class="titulo">Cliente</h2>
   <p class="sub">Dados para o contrato e o cadastro no Bitrix24.</p>
-  ${opcoes({ path: 'cliente.tipo', label: 'O cliente é Pessoa Física (CPF) ou Pessoa Jurídica (CNPJ)?', itens: [{ valor: 'PF', texto: 'Pessoa Física (CPF)' }, { valor: 'PJ', texto: 'Pessoa Jurídica (CNPJ)' }] })}
+  ${tipoPedido}${tipoCliente}
   ${corpo}`;
 }
 
@@ -309,9 +334,9 @@ function etapaPortabilidade() {
     const t = b.titular;
     let numeros;
     if (b.modo === 'faixa') {
-      numeros = `<div class="linha">${campo({ path: `${pre}.faixa.inicio`, label: 'Primeiro número da sequência', tipo: 'phone' })}${campo({ path: `${pre}.faixa.fim`, label: 'Último número da sequência', tipo: 'phone' })}</div>`;
+      numeros = `<div class="linha">${campo({ path: `${pre}.faixa.inicio`, label: 'Primeiro número da sequência', tipo: 'phonePort' })}${campo({ path: `${pre}.faixa.fim`, label: 'Último número da sequência', tipo: 'phonePort' })}</div>`;
     } else {
-      numeros = b.numeros.map((_, j) => `<div class="linha">${campo({ path: `${pre}.numeros.${j}`, label: `Número ${j + 1}`, tipo: 'phone' })}
+      numeros = b.numeros.map((_, j) => `<div class="linha">${campo({ path: `${pre}.numeros.${j}`, label: `Número ${j + 1}`, tipo: 'phonePort', ajuda: 'Fixo (8 dígitos) ou celular (9 dígitos), com DDD.' })}
         ${b.numeros.length > 1 ? `<div class="campo"><label>&nbsp;</label><button type="button" class="mini perigo" data-acao="rem-numero:${i}:${j}">Remover número</button></div>` : ''}</div>`).join('')
         + `<p>${botaoCopiar(`add-numero:${i}`, '+ número')}</p>${erroDe(`${pre}.numeros`) ? aviso('erro', esc(erroDe(`${pre}.numeros`))) : ''}`;
     }
@@ -387,10 +412,10 @@ function etapaConclusao() {
   const fonte = p.cliente.tipo === 'PF' ? 'cliente.pf.endereco' : 'cliente.pj.endereco';
   const inst = catalogo.regras.instalacao;
   return `<h2 class="titulo">Conclusão do pedido</h2>
-  <div class="linha">${selecao({ path: 'conclusao.vencimento', label: 'Dia de vencimento da fatura', itens: catalogo.regras.vencimentos.map((d) => ({ valor: d, texto: `Dia ${d}` })) })}</div>
+  ${ehAditivo() ? '' : `<div class="linha">${selecao({ path: 'conclusao.vencimento', label: 'Dia de vencimento da fatura', itens: catalogo.regras.vencimentos.map((d) => ({ valor: d, texto: `Dia ${d}` })) })}</div>`}
   ${opcoes({ path: 'conclusao.instalacao', label: 'Instalação do serviço', itens: [{ valor: 'remota', texto: `Remota (todo o Brasil) — ${brl(inst.remota)}` }, { valor: 'presencial', texto: `Presencial (consultar disponibilidade) — ${brl(inst.presencial)}` }] })}
   ${campo({ path: 'conclusao.observacoes', label: 'Observações importantes do projeto', tipo: 'textarea' })}
-  <h3>Endereço de instalação <span class="acao">${botaoCopiar(`copiar-endereco:${fonte}`, 'Mesmo endereço de cobrança')}</span></h3>
+  <h3>Endereço de instalação ${ehAditivo() ? '' : `<span class="acao">${botaoCopiar(`copiar-endereco:${fonte}`, 'Mesmo endereço de cobrança')}</span>`}</h3>
   ${endereco('conclusao.endereco')}`;
 }
 
@@ -426,6 +451,14 @@ function pedidoParaEnvio() {
   if (!['phone', 'ambos'].includes(p.produtos)) delete p.phone;
   if (p.vox) p.vox.linhas = onlyDigits(p.vox.linhas) ? Number(onlyDigits(p.vox.linhas)) : '';
   if (p.cliente.tipo === 'PF') delete p.cliente.pj; else if (p.cliente.tipo === 'PJ') delete p.cliente.pf;
+  if (p.tipoPedido === 'aditivo') {
+    // Aditivo: só a identificação do cliente e o responsável; o resto vem do cadastro no Bitrix24.
+    delete p.cliente.contatos;
+    p.arquivos = { documentos: [] };
+    p.conclusao.vencimento = '';
+  } else {
+    delete p.cliente.responsavelAditivo;
+  }
   (p.portabilidades || []).forEach((b) => {
     if (b.modo === 'faixa') b.numeros = []; else b.faixa = { inicio: '', fim: '' };
     if (b.operadora !== 'Outra') b.operadoraOutra = '';
@@ -481,6 +514,13 @@ function errosDaEtapa(etapa) {
   }
   const p = state.pedido;
   if (etapa.id === 'produtos' && p.produtos && !p.fidelidade) out.fidelidade = 'Escolha a fidelidade.';
+  if (etapa.id === 'cliente' && !p.tipoPedido) out.tipoPedido = 'Informe se é contrato novo ou aditivo.';
+  if (etapa.id === 'cliente' && p.tipoPedido === 'aditivo' && p.cliente.tipo) {
+    const doc = onlyDigits(p.cliente.tipo === 'PF' ? p.cliente.pf.cpf : p.cliente.pj.cnpj);
+    const b = state.clienteBitrix;
+    if (b?.doc === doc && b.encontrado === false) out.clienteBitrix = 'Cliente não encontrado no Bitrix24 com esse documento. Confira o CPF/CNPJ ou faça como contrato novo.';
+    else if (doc && b?.doc !== doc) out.clienteBitrix = 'Aguarde a busca do cliente no Bitrix24 (saia do campo do documento).';
+  }
   if (etapa.id === 'vox' && p.vox.adicionais.quer == null) out['vox.adicionais.quer'] = 'Responda se deseja números adicionais.';
   if (etapa.id === 'port') {
     if (p.querPortabilidade == null) out.querPortabilidade = 'Responda se deseja portabilidade.';
@@ -597,9 +637,17 @@ async function buscarNoBitrix(tipo) {
   try {
     const r = await fetch(`/formulario/api/cliente?tipo=${tipo}&doc=${doc}`);
     const d = await r.json();
-    avisos.cliente = d.encontrado
-      ? aviso('info', `Este cliente já está no Bitrix24${d.lead ? ' (lead encontrado: será convertido)' : ''}. O pedido será ligado ao cadastro existente.`)
-      : '';
+    state.clienteBitrix = d.indisponivel ? null : { doc, encontrado: !!d.cadastro };
+    delete state.erros.clienteBitrix;
+    if (ehAditivo()) {
+      avisos.cliente = d.indisponivel ? aviso('alerta', 'Não foi possível consultar o Bitrix24 agora. Tente de novo em instantes.')
+        : d.cadastro ? aviso('ok', 'Cliente encontrado no Bitrix24. O aditivo será ligado a esse cadastro.') : '';
+      if (!d.indisponivel && !d.cadastro) state.erros.clienteBitrix = 'Cliente não encontrado no Bitrix24 com esse documento. Confira o CPF/CNPJ ou faça como contrato novo.';
+    } else {
+      avisos.cliente = d.encontrado
+        ? aviso('info', `Este cliente já está no Bitrix24${d.lead ? ' (lead encontrado: será convertido)' : ''}. O pedido será ligado ao cadastro existente.`)
+        : '';
+    }
     render();
   } catch { /* opcional */ }
 }
@@ -685,6 +733,7 @@ function bind() {
     set(state.pedido, el.dataset.path, v);
     delete state.erros[el.dataset.path];
     if (el.dataset.path === 'origem.tipo') { state.pedido.origem.id = ''; state.pedido.vox.tipoId = ''; }
+    if (el.dataset.path === 'tipoPedido' || el.dataset.path === 'cliente.tipo') { delete avisos.cliente; state.clienteBitrix = null; delete state.erros.clienteBitrix; }
     if (el.dataset.path === 'origem.id') aoEscolherOrigem();
     if (el.dataset.path === 'produtos' && state.pedido.produtos !== 'vox' && state.pedido.fidelidade === 'sem') state.pedido.fidelidade = '';
     if (el.dataset.path === 'fidelidade' || el.dataset.path === 'vox.tipoId') state.pedido.vox.planoPreId = el.dataset.path === 'vox.tipoId' ? '' : state.pedido.vox.planoPreId;

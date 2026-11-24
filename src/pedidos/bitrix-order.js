@@ -2,8 +2,8 @@
 // Um pedido gera vários negócios no mesmo pipeline e com o mesmo responsável:
 //   1 card Neo Vox, 1 card Neo Phone e 1 card por bloco de portabilidade,
 // todos com ORIGIN_ID = id do pedido (ORIGINATOR_ID = "formulario-pedidos") para ficarem ligados.
-import { F, BUSCA, PIPELINES, ORIGINATOR_ID } from './bitrix-fields.js';
-import { onlyDigits, mask, phoneDigits } from './shared/validators.js';
+import { F, BUSCA, ADMINISTRATIVO, TIPO_NEGOCIO, ORIGINATOR_ID } from './bitrix-fields.js';
+import { onlyDigits, mask, phoneDigits, phoneCrm } from './shared/validators.js';
 import { brl, contarNumerosPortabilidade } from './shared/pricing.js';
 
 const simNao = (v) => (v ? 'Sim' : 'Não');
@@ -32,7 +32,7 @@ const fileValues = (arquivos) => (arquivos || []).map((a) => ({ fileData: [a.nom
 function setPessoa(fields, map, p) {
   if (!map || !p) return;
   if (map.nome) fields[map.nome] = p.nome || '';
-  if (map.celular) fields[map.celular] = phoneDigits(p.celular);
+  if (map.celular) fields[map.celular] = phoneCrm(p.celular);
   if (map.email) fields[map.email] = p.email || '';
 }
 
@@ -153,17 +153,21 @@ function camposComuns({ pedido, calculo, origemInfo }) {
     f[F.revendaCnpj] = mask.cnpj(o.cnpj);
     f[F.revendaRazao] = origemInfo.nome;
     f[F.revendaRespNome] = o.nome;
-    f[F.revendaRespCelular] = phoneDigits(o.celular);
+    f[F.revendaRespCelular] = phoneCrm(o.celular);
     f[F.revendaRespEmail] = o.email;
   } else {
     f[F.vendedor] = o.nome;
   }
 
   const k = c.contatos;
-  if (c.tipo === 'PF') {
+  if (pedido.tipoPedido === 'aditivo') {
+    // Aditivo: identificação do cliente já cadastrado + responsável pelo aditivo (vai nos campos do gestor do contrato).
+    if (c.tipo === 'PF') { f[F.pf.nome] = c.pf.nome; f[F.pf.cpf] = mask.cpf(c.pf.cpf); setPessoa(f, F.pf.gestor, c.responsavelAditivo); }
+    else { f[F.pj.cnpj] = mask.cnpj(c.pj.cnpj); f[F.pj.razaoSocial] = c.pj.razaoSocial; setPessoa(f, F.pj.gestor, c.responsavelAditivo); }
+  } else if (c.tipo === 'PF') {
     const p = c.pf;
     f[F.pf.nome] = p.nome; f[F.pf.cpf] = mask.cpf(p.cpf); f[F.pf.nascimento] = p.nascimento;
-    f[F.pf.celular] = phoneDigits(p.celular); f[F.pf.email] = p.email;
+    f[F.pf.celular] = phoneCrm(p.celular); f[F.pf.email] = p.email;
     setEndereco(f, F.pf.end, p.endereco);
     for (const papel of ['gestor', 'financeiro', 'tecnico', 'testemunha']) setPessoa(f, F.pf[papel], k[papel]);
   } else {
@@ -174,15 +178,15 @@ function camposComuns({ pedido, calculo, origemInfo }) {
     f[F.pj.inscricaoMunicipal] = j.inscricaoMunicipal; f[F.pj.simples] = j.simples; f[F.pj.retencaoISS] = j.retencaoISS;
     const [principal, ...outros] = j.socios;
     f[F.pj.socio.nome] = principal.nome; f[F.pj.socio.cpf] = mask.cpf(principal.cpf); f[F.pj.socio.nascimento] = principal.nascimento;
-    f[F.pj.socio.celular] = phoneDigits(principal.celular); f[F.pj.socio.email] = principal.email;
+    f[F.pj.socio.celular] = phoneCrm(principal.celular); f[F.pj.socio.email] = principal.email;
     f[F.pj.maisDeUmSocio] = simNao(outros.length);
-    f[F.pj.outrosSocios] = outros.map((s, i) => `Sócio ${i + 2}: ${s.nome} | CPF ${mask.cpf(s.cpf)} | Nasc. ${s.nascimento} | ${phoneDigits(s.celular)} | ${s.email}`).join('\n');
+    f[F.pj.outrosSocios] = outros.map((s, i) => `Sócio ${i + 2}: ${s.nome} | CPF ${mask.cpf(s.cpf)} | Nasc. ${s.nascimento} | ${phoneCrm(s.celular)} | ${s.email}`).join('\n');
     setEndereco(f, F.pj.end, j.endereco);
     for (const papel of ['gestor', 'financeiro', 'tecnico', 'testemunha']) setPessoa(f, F.pj[papel], k[papel]);
   }
 
   const z = pedido.conclusao;
-  f[F.vencimento] = String(z.vencimento);
+  if (z.vencimento) f[F.vencimento] = String(z.vencimento);
   f[F.instalacao] = z.instalacao === 'remota' ? 'Remoto (Todo o Brasil)' : 'Presencial (Consultar Disponibilidade)';
   f[F.valorInstalacao] = brl(calculo.instalacao);
   f[F.observacoes] = z.observacoes;
@@ -202,11 +206,14 @@ function camposVox(calculo, pedido) {
   f[F.vox.linhas] = String(v.linhas);
   f[F.vox.plano] = v.plano;
   if (isPre) f[F.vox.pacoteRecarga] = brl(v.precoCheio);
+  const tarifa = (x) => (x == null ? '' : `R$ ${Number(x).toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })}`);
   if (v.tarifas) {
-    f[F.vox.tarifaLocalFixo] = brl(v.tarifas.fixoLocal ?? v.tarifas.local);
-    f[F.vox.tarifaLdnFixo] = brl(v.tarifas.fixoLDN ?? v.tarifas.ldn);
-    f[F.vox.tarifaLocalMovel] = brl(v.tarifas.movelLocal ?? v.tarifas.vc);
-    f[F.vox.tarifaLdnMovel] = brl(v.tarifas.movelLDN ?? v.tarifas.vc);
+    f[F.vox.tarifaLocalFixo] = tarifa(v.tarifas.fixoLocal ?? v.tarifas.local);
+    f[F.vox.tarifaLdnFixo] = tarifa(v.tarifas.fixoLDN ?? v.tarifas.ldn);
+    f[F.vox.tarifaLocalMovel] = tarifa(v.tarifas.movelLocal ?? v.tarifas.vc);
+    f[F.vox.tarifaLdnMovel] = tarifa(v.tarifas.movelLDN ?? v.tarifas.vc);
+  } else if (v.categoria === 'ilimitado') {
+    for (const k of ['tarifaLocalFixo', 'tarifaLdnFixo', 'tarifaLocalMovel', 'tarifaLdnMovel']) f[F.vox[k]] = 'Ilimitado';
   }
   f[F.vox.valorLinha] = brl(v.precoCheio);
   f[F.vox.valorTotal] = brl(v.totalLinhasCheio);
@@ -238,6 +245,11 @@ function camposPhone(calculo) {
     f[m.pct] = pct(i.descontoPercent); f[m.rs] = brl(i.totalCheio - i.total);
   }
   f[F.phone.totalComDesconto] = brl(p.mensal);
+  // Desconto total das licenças: % aplicado, R$ por mês e o benefício no período da fidelidade.
+  const descontoMensal = Math.round((p.totalLicencasCheio - p.totalLicencas) * 100) / 100;
+  f[F.phone.descontoTotalPct] = pct(p.totalLicencasCheio ? Math.round((descontoMensal / p.totalLicencasCheio) * 10000) / 100 : 0);
+  f[F.phone.descontoTotalRs] = brl(descontoMensal);
+  f[F.phone.beneficiosDesconto] = brl(descontoMensal * (p.fidelidade || 1));
   f[F.phone.somaLicencas] = String(p.totalRamais);
   f[F.phone.somaBasicStandard] = String(p.licencasComGravacao);
   f[F.phone.gravacao] = p.gravacao ? `${p.gravacao.nome}${p.gravacao.precoUnit ? ` = ${brl(p.gravacao.precoUnit)}` : ''}` : '';
@@ -260,10 +272,10 @@ function camposPortabilidade(bloco, pedido, calculo) {
   f[F.port.valorTotal] = brl(qtd * unit);
   if (bloco.modo === 'faixa') {
     f[F.port.emSequencia] = 'Sim';
-    f[F.port.primeiro] = phoneDigits(bloco.faixa.inicio);
-    f[F.port.ultimo] = phoneDigits(bloco.faixa.fim);
+    f[F.port.primeiro] = phoneCrm(bloco.faixa.inicio);
+    f[F.port.ultimo] = phoneCrm(bloco.faixa.fim);
   } else {
-    const nums = bloco.numeros.filter((x) => onlyDigits(x)).map(phoneDigits);
+    const nums = bloco.numeros.filter((x) => onlyDigits(x)).map(phoneCrm);
     f[F.port.emSequencia] = 'Não';
     if (nums.length === 1) f[F.port.numeroUnico] = nums[0];
     f[F.port.numeros] = nums.join('\n');
@@ -273,14 +285,14 @@ function camposPortabilidade(bloco, pedido, calculo) {
   if (t.tipo === 'PF') {
     f[F.port.mesmoCliente] = simNao(bloco.titular?.mesmoCliente);
     f[F.port.titularNome] = t.pf.nome; f[F.port.titularCpf] = mask.cpf(t.pf.cpf);
-    f[F.port.titularCelular] = phoneDigits(t.pf.celular); f[F.port.titularEmail] = t.pf.email;
+    f[F.port.titularCelular] = phoneCrm(t.pf.celular); f[F.port.titularEmail] = t.pf.email;
   } else {
     f[F.port.mesmaEmpresa] = simNao(bloco.titular?.mesmoCliente);
     f[F.port.empresaCnpj] = mask.cnpj(t.pj.cnpj); f[F.port.empresaRazao] = t.pj.razaoSocial; f[F.port.empresaFundacao] = t.pj.dataFundacao;
     f[F.port.empresaIndicadorIE] = t.pj.indicadorIE; f[F.port.empresaIE] = t.pj.inscricaoEstadual || ''; f[F.port.empresaIM] = t.pj.inscricaoMunicipal || '';
   }
   f[F.port.tecnicoNome] = bloco.tecnico.nome;
-  f[F.port.tecnicoCelular] = phoneDigits(bloco.tecnico.celular);
+  f[F.port.tecnicoCelular] = phoneCrm(bloco.tecnico.celular);
   f[F.port.tecnicoEmail] = bloco.tecnico.email;
   const faturas = fileValues(bloco.fatura);
   if (faturas.length) f[F.arqUltimaFatura] = faturas;
@@ -292,8 +304,8 @@ function camposPortabilidade(bloco, pedido, calculo) {
 const operadoraDe = (b) => (b.operadora === 'Outra' ? b.operadoraOutra : b.operadora);
 const unicos = (xs) => [...new Set(xs.filter(Boolean))];
 function numerosDoBloco(b) {
-  if (b.modo === 'faixa') return [`${phoneDigits(b.faixa.inicio)} a ${phoneDigits(b.faixa.fim)}`];
-  return b.numeros.filter((x) => onlyDigits(x)).map(phoneDigits);
+  if (b.modo === 'faixa') return [`${phoneCrm(b.faixa.inicio)} a ${phoneCrm(b.faixa.fim)}`];
+  return b.numeros.filter((x) => onlyDigits(x)).map(phoneCrm);
 }
 
 function camposPortabilidadeGrupo(blocos, pedido, calculo) {
@@ -398,7 +410,8 @@ export async function enviarPedidoAoBitrix({ client, catalogo, pedido, calculo, 
   const o = pedido.origem;
   const origemInfo = (o.tipo === 'revenda' ? catalogo.revendas : catalogo.vendedores).find((x) => x.id === o.id);
   const assignedById = Number(origemInfo.bitrixUserId);
-  const pipe = PIPELINES[o.tipo];
+  const aditivo = pedido.tipoPedido === 'aditivo';
+  const tipos = TIPO_NEGOCIO[aditivo ? 'aditivo' : 'novo'];
   const c = pedido.cliente;
   const nomeCliente = c.tipo === 'PF' ? c.pf.nome : c.pj.razaoSocial;
 
@@ -406,7 +419,14 @@ export async function enviarPedidoAoBitrix({ client, catalogo, pedido, calculo, 
   const achado = await buscarCliente(client, { tipo: c.tipo, doc: c.tipo === 'PF' ? c.pf.cpf : c.pj.cnpj });
   let { contactId, companyId } = achado;
   const criados = { contato: false, empresa: false };
-  if (c.tipo === 'PJ') {
+  if (aditivo) {
+    // Aditivo: o cliente PRECISA já existir no Bitrix24 (empresa ou contato com esse CPF/CNPJ).
+    if (!contactId && !companyId) throw new Error(`Cliente do aditivo não encontrado no Bitrix24 (${c.tipo === 'PF' ? 'CPF' : 'CNPJ'} ${c.tipo === 'PF' ? mask.cpf(c.pf.cpf) : mask.cnpj(c.pj.cnpj)}).`);
+    if (!contactId) {
+      contactId = await findDuplicate(client, 'CONTACT', c.responsavelAditivo);
+      if (!contactId) { contactId = await criarContato(client, c.responsavelAditivo, { assignedById, companyId }); criados.contato = true; }
+    }
+  } else if (c.tipo === 'PJ') {
     if (!companyId) { companyId = await criarClientePJ(client, c.pj, assignedById); criados.empresa = true; }
     const socio = c.pj.socios[0];
     contactId = await findDuplicate(client, 'CONTACT', socio);
@@ -415,8 +435,8 @@ export async function enviarPedidoAoBitrix({ client, catalogo, pedido, calculo, 
     contactId = await findDuplicate(client, 'CONTACT', c.pf);
     if (!contactId) { contactId = await criarContato(client, c.pf, { assignedById, cpf: c.pf.cpf, endereco: c.pf.endereco }); criados.contato = true; }
   }
-  let leadId = achado.leadId;
-  if (!leadId) {
+  let leadId = aditivo ? null : achado.leadId;
+  if (!leadId && !aditivo) {
     const contato = c.tipo === 'PF' ? c.pf : c.pj.socios[0];
     const dup = await findDuplicate(client, 'LEAD', contato);
     if (dup) {
@@ -428,16 +448,16 @@ export async function enviarPedidoAoBitrix({ client, catalogo, pedido, calculo, 
   // 2. Cards
   const comuns = camposComuns({ pedido, calculo, origemInfo });
   const base = {
-    CATEGORY_ID: pipe.categoryId, STAGE_ID: pipe.stageId, ASSIGNED_BY_ID: assignedById,
+    CATEGORY_ID: ADMINISTRATIVO.categoryId, STAGE_ID: aditivo ? ADMINISTRATIVO.etapaAditivo : ADMINISTRATIVO.etapaNovo, ASSIGNED_BY_ID: assignedById,
     CONTACT_ID: contactId, ...(companyId ? { COMPANY_ID: companyId } : {}),
     SOURCE_ID: 'WEBFORM', ORIGINATOR_ID: ORIGINATOR_ID, ORIGIN_ID: pedidoId, CURRENCY_ID: 'BRL',
-    COMMENTS: `Pedido ${pedidoId} enviado pelo formulário por ${o.nome} (${o.tipo === 'revenda' ? 'revenda' : 'vendedor'}).${leadId ? ` Lead de origem: #${leadId}.` : ''}`,
+    COMMENTS: `${aditivo ? 'ADITIVO – ' : ''}Pedido ${pedidoId} enviado pelo formulário por ${o.nome} (${o.tipo === 'revenda' ? 'revenda' : 'vendedor'}).${leadId ? ` Lead de origem: #${leadId}.` : ''}`,
   };
   const cards = [];
   // O valor do negócio é a soma das linhas de produto (mensalidades + cobranças únicas).
   const addDeal = async (tipo, titulo, campos, rows) => {
     const id = Number(await r(client, 'crm.deal.add', {
-      fields: { ...base, ...comuns, ...campos, TITLE: `Pedido ${pedidoId} – ${titulo} – ${nomeCliente}`, OPPORTUNITY: somaLinhas(rows) },
+      fields: { ...base, ...comuns, ...campos, TYPE_ID: tipos[tipo], TITLE: `Pedido ${pedidoId} – ${aditivo ? 'Aditivo ' : ''}${titulo} – ${nomeCliente}`, OPPORTUNITY: somaLinhas(rows) },
       params: { REGISTER_SONET_EVENT: 'Y' },
     }));
     if (rows.length) await r(client, 'crm.deal.productrows.set', { id, rows });

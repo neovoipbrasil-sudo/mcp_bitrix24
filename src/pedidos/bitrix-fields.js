@@ -2,9 +2,17 @@
 // (conjunto UF_CRM_65BBED…/65BBEE…, rótulos "(Clientes …)"), para manter modelos de contrato,
 // relatórios e automações funcionando. Levantamento em docs/superpowers/specs/2026-11-12-formulario-pedidos-design.md.
 
-export const PIPELINES = {
-  vendedor: { categoryId: 22, stageId: 'C22:UC_5CXUV0' }, // Clientes - Vendas Diretas → Organizar Dados - Cliente Formulario
-  revenda: { categoryId: 0, stageId: 'NEW' }, // Clientes - Revendas → Organizar Dados
+// Todos os pedidos (vendedores e revendas) entram no pipeline Administrativo.
+export const ADMINISTRATIVO = {
+  categoryId: 16,
+  etapaNovo: 'C16:UC_7SA6T7', // Validação de Dados
+  etapaAditivo: 'C16:UC_ECHZPU', // Aditivo Recebido
+};
+
+// Campo padrão "Tipo" do negócio (lista DEAL_TYPE do Bitrix).
+export const TIPO_NEGOCIO = {
+  novo: { vox: 'SALE', phone: 'UC_JUD1FN', portabilidade: 'SALE' }, // Neo Vox / Neo Phone
+  aditivo: { vox: 'UC_TF3A56', phone: 'UC_K46OU9', portabilidade: 'UC_TF3A56' }, // Aditivo Neo Vox / Aditivo Neo Phone
 };
 
 export const ORIGINATOR_ID = 'formulario-pedidos';
@@ -71,7 +79,7 @@ export const F = {
     essentials: { qtd: 'UF_CRM_65BBEE0DBA464', unit: 'UF_CRM_65BBEE0E0E5C9', total: 'UF_CRM_65BBEE0E57CEE', pct: 'UF_CRM_65BBEE0EA139C', rs: 'UF_CRM_65BBEE0EE9018' },
     basic: { qtd: 'UF_CRM_65BBEE0F3FC5E', unit: 'UF_CRM_65BBEE0F89ADB', total: 'UF_CRM_65BBEE0FD58A9', pct: 'UF_CRM_65BBEE1035D23', rs: 'UF_CRM_65BBEE1090B06' },
     standard: { qtd: 'UF_CRM_65BBEE10D6D5A', unit: 'UF_CRM_65BBEE11334A4', total: 'UF_CRM_65BBEE1187819', pct: 'UF_CRM_65BBEE11D2378', rs: 'UF_CRM_65BBEE122D165' },
-    totalComDesconto: 'UF_CRM_65BBEE127DD85', somaLicencas: 'UF_CRM_65BBEE12D7389', somaBasicStandard: 'UF_CRM_65BBEE1339194',
+    totalComDesconto: 'UF_CRM_65BBEE127DD85', descontoTotalPct: 'UF_CRM_1728395089832', descontoTotalRs: 'UF_CRM_1728395098809', beneficiosDesconto: 'UF_CRM_1728395078785', somaLicencas: 'UF_CRM_65BBEE12D7389', somaBasicStandard: 'UF_CRM_65BBEE1339194',
     gravacao: 'UF_CRM_65BBEE1392DB1', pacotesGravacao: 'UF_CRM_65BBEE13DAF0B', totalGravacao: 'UF_CRM_65BBEE143E140',
     discador: 'UF_CRM_65BBEE149DCDE', grupoCallCenter: 'UF_CRM_65BBEE14EFE50',
   },

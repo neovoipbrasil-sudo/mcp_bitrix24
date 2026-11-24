@@ -13,7 +13,14 @@ export function montarResumo(pedido, calculo) {
 
   add('Quem enviou', [[o.tipo === 'revenda' ? 'Revenda' : 'Vendedor', o.nome], o.tipo === 'revenda' && ['CNPJ da revenda', mask.cnpj(o.cnpj)], ['E-mail', o.email], ['Celular', mask.phone(o.celular)]]);
 
-  if (c.tipo === 'PF') {
+  if (pedido.tipoPedido === 'aditivo') {
+    const r = c.responsavelAditivo || {};
+    add(`Cliente do aditivo (${c.tipo === 'PF' ? 'Pessoa Física' : 'Pessoa Jurídica'})`, [
+      c.tipo === 'PF' ? ['Nome', c.pf?.nome] : ['Razão social', c.pj?.razaoSocial],
+      c.tipo === 'PF' ? ['CPF', mask.cpf(c.pf?.cpf)] : ['CNPJ', mask.cnpj(c.pj?.cnpj)],
+      ['Responsável pelo aditivo', r.nome], ['Celular', mask.phone(r.celular)], ['E-mail', r.email],
+    ]);
+  } else if (c.tipo === 'PF') {
     add('Cliente (Pessoa Física)', [['Nome', c.pf?.nome], ['CPF', mask.cpf(c.pf?.cpf)], ['Celular', mask.phone(c.pf?.celular)], ['E-mail', c.pf?.email]]);
   } else if (c.tipo === 'PJ') {
     add('Cliente (Pessoa Jurídica)', [
@@ -22,7 +29,7 @@ export function montarResumo(pedido, calculo) {
     ]);
   }
 
-  add('Produtos', [['Escolha', PRODUTOS[pedido.produtos]], pedido.fidelidade && ['Fidelidade', `${pedido.fidelidade} meses`]]);
+  add('Produtos', [['Tipo do pedido', pedido.tipoPedido === 'aditivo' ? 'Aditivo (cliente já cadastrado)' : 'Contrato novo'], ['Escolha', PRODUTOS[pedido.produtos]], pedido.fidelidade && ['Fidelidade', `${pedido.fidelidade} meses`]]);
 
   const v = calculo.vox;
   if (v) {

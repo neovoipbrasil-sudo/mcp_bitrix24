@@ -57,9 +57,9 @@ export function criarTelaPedidos({ perfil, aoSair }) {
 
   function exportarCsv() {
     const linhas = filtrados();
-    const cab = ['Pedido', 'Data', 'Status', 'Origem', 'Vendedor/Revenda', 'Cliente', 'CPF/CNPJ', 'Produtos', 'Mensal (R$)', 'Adesão (R$)', 'Total do contrato (R$)', 'Bitrix', 'Cards', 'E-mail'];
+    const cab = ['Pedido', 'Data', 'Tipo', 'Status', 'Origem', 'Vendedor/Revenda', 'Cliente', 'CPF/CNPJ', 'Produtos', 'Mensal (R$)', 'Adesão (R$)', 'Total do contrato (R$)', 'Bitrix', 'Cards', 'E-mail'];
     const num = (n) => (n == null ? '' : String(n).replace('.', ','));
-    const csv = [cab, ...linhas.map((p) => [p.id, dataHora(p.criadoEm), p.status, p.origemTipo === 'revenda' ? 'Revenda' : 'Vendedor', p.origemNome, p.clienteNome, p.clienteDoc, PRODUTOS[p.produtos] || p.produtos,
+    const csv = [cab, ...linhas.map((p) => [p.id, dataHora(p.criadoEm), p.tipoPedido === 'aditivo' ? 'Aditivo' : 'Contrato novo', p.status, p.origemTipo === 'revenda' ? 'Revenda' : 'Vendedor', p.origemNome, p.clienteNome, p.clienteDoc, PRODUTOS[p.produtos] || p.produtos,
       num(p.mensal), num(p.adesao), num(p.totalContrato), BITRIX[p.bitrix] || p.bitrix, p.cards, p.email])]
       .map((l) => l.map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`).join(';')).join('\r\n');
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
@@ -90,7 +90,7 @@ export function criarTelaPedidos({ perfil, aoSair }) {
     <div class="rolavel"><table class="tab pedidos"><thead><tr><th>Pedido</th><th>Data</th><th>Cliente</th><th>Vendedor/Revenda</th><th>Produtos</th><th class="num">Mensal</th><th>Status</th><th>Bitrix</th></tr></thead>
     <tbody>${f.map((p) => `<tr class="clicavel" data-abrir="${esc(p.id)}">
       <td><b>${esc(p.id)}</b></td><td>${esc(dataHora(p.criadoEm))}</td><td>${esc(p.clienteNome)}<br><span class="ajuda">${esc(p.clienteDoc)}</span></td>
-      <td>${esc(p.origemNome)}<br><span class="ajuda">${p.origemTipo === 'revenda' ? 'Revenda' : 'Vendedor'}</span></td><td>${esc(PRODUTOS[p.produtos] || '')}</td>
+      <td>${esc(p.origemNome)}<br><span class="ajuda">${p.origemTipo === 'revenda' ? 'Revenda' : 'Vendedor'}</span></td><td>${esc(PRODUTOS[p.produtos] || '')}${p.tipoPedido === 'aditivo' ? '<br><span class="etiqueta">Aditivo</span>' : ''}</td>
       <td class="num">${brl(p.mensal)}</td><td><span class="etiqueta">${esc(p.status)}</span></td>
       <td><span class="etiqueta ${p.bitrix === 'falhou' ? 'ruim' : p.bitrix === 'enviado' ? 'bom' : ''}">${esc(BITRIX[p.bitrix] || p.bitrix)}</span></td></tr>`).join('') || '<tr><td colspan="8" class="ajuda">Nenhum pedido com esses filtros.</td></tr>'}</tbody></table></div>`;
   }
