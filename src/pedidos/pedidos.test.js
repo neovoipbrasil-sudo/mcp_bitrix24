@@ -4,7 +4,7 @@ import os from 'os';
 import path from 'path';
 import express from 'express';
 import request from 'supertest';
-import { isValidCPF, isValidCNPJ, isValidPhone, mask, phoneDigits, validateValue, isValidDate } from './shared/validators.js';
+import { isValidCPF, isValidCNPJ, isValidPhone, mask, phoneDigits, phoneCrm, validateValue, isValidDate } from './shared/validators.js';
 import { calcularPedido, resolverPlanoVox, contarNumerosPortabilidade, tiposVoxDisponiveis } from './shared/pricing.js';
 import { validarPedido } from './shared/validate-order.js';
 import { createCatalogStore } from './catalog-store.js';
@@ -129,6 +129,59 @@ describe('validação do pedido', () => {
   });
 });
 
+describe('mudanças de novembro', () => {
+  it('telefone no formato do CRM e portabilidade com 8 ou 9 dígitos', () => {
+    expect(phoneCrm('+55 (61) 9 9999-0000')).toBe('55 (61) 9 9999-0000');
+    expect(phoneCrm('+55 (61) 3042-4080')).toBe('55 (61) 3042-4080');
+    expect(mask.phonePort('6130424080')).toBe('+55 (61) 3042-4080');
+    expect(mask.phonePort('61930424080')).toBe('+55 (61) 9 3042-4080');
+    expect(mask.phonePort('619304240801234')).toBe('+55 (61) 9 3042-4080'); // nunca passa de 9 dígitos
+    expect(validateValue('phonePort', '+55 (61) 3042-4080')).toBeNull();
+    expect(validateValue('phonePort', '+55 (61) 304-4080')).toMatch(/inválido/);
+    expect(contarNumerosPortabilidade({ modo: 'faixa', faixa: { inicio: '556130424080', fim: '556130424089' } })).toBe(10);
+  });
+  it('Neo Phone: descontos totais e benefício no período', async () => {
+    const calls = [];
+    const client = { portal: 'x', call: vi.fn(async (m, p) => { calls.push([m, p]); if (m.endsWith('.list') || m === 'crm.duplicate.findbycomm') return { result: [] }; return { result: 1 }; }) };
+    const pedido = pedidoPJ({ produtos: 'phone', phone: { licencas: { essentials: 3 }, gravacao: { id: '90d' } } });
+    await enviarPedidoAoBitrix({ client, catalogo, pedido, calculo: calcularPedido(catalogo, pedido), pedidoId: 'PED-3', resumoTexto: '', portalHost: 'x' });
+    const deal = calls.find(([m]) => m === 'crm.deal.add')[1].fields;
+    // 3 × 39,94 cheio = 119,82; com 50% = 59,91 → desconto 59,91/mês; 24 meses = 1.437,84
+    expect(deal[F.phone.descontoTotalPct]).toBe('50%');
+    expect(deal[F.phone.descontoTotalRs]).toMatch(/59,91/);
+    expect(deal[F.phone.beneficiosDesconto]).toMatch(/1.437,84/);
+  });
+  it('aditivo: valida só identificação + responsável e grava como aditivo em "Aditivo Recebido"', async () => {
+    const aditivo = (over = {}) => ({ ...pedidoPJ(), tipoPedido: 'aditivo',
+      cliente: { tipo: 'PJ', pj: { cnpj: '11.222.333/0001-81', razaoSocial: 'Empresa Teste LTDA' }, responsavelAditivo: pess('Resp Aditivo') },
+      arquivos: { documentos: [] }, conclusao: { vencimento: '', instalacao: 'remota', observacoes: 'Aditivo', endereco: end }, ...over });
+    expect(validarPedido(catalogo, aditivo()).erros).toEqual([]);
+    const semResp = aditivo(); semResp.cliente.responsavelAditivo = { nome: '', celular: '', email: '' };
+    expect(validarPedido(catalogo, semResp).erros.map((e) => e.campo)).toContain('cliente.responsavelAditivo.nome');
+
+    const calls = [];
+    const client = { portal: 'x', call: vi.fn(async (m, p) => {
+      calls.push([m, p]);
+      if (m === 'crm.requisite.list') return { result: [{ ID: 9, ENTITY_ID: 555 }] }; // empresa já existe
+      if (m.endsWith('.list') || m === 'crm.duplicate.findbycomm') return { result: [] };
+      return { result: 900 };
+    }) };
+    const pedido = aditivo();
+    const r = await enviarPedidoAoBitrix({ client, catalogo, pedido, calculo: calcularPedido(catalogo, pedido), pedidoId: 'PED-4', resumoTexto: '', portalHost: 'x' });
+    const deals = calls.filter(([m]) => m === 'crm.deal.add').map(([, p]) => p.fields);
+    expect(deals.map((d) => d.TYPE_ID)).toEqual(['UC_TF3A56', 'UC_K46OU9']); // Aditivo Neo Vox, Aditivo Neo Phone
+    expect(deals.every((d) => d.CATEGORY_ID === 16 && d.STAGE_ID === 'C16:UC_ECHZPU' && d.COMPANY_ID === 555)).toBe(true);
+    expect(deals[0].TITLE).toMatch(/Aditivo Neo Vox/);
+    expect(deals[0][F.pj.gestor.nome]).toBe('Resp Aditivo');
+    expect(calls.some(([m]) => m === 'crm.company.add')).toBe(false); // não cria empresa
+    expect(calls.some(([m]) => m === 'crm.lead.update')).toBe(false); // não mexe em lead
+    expect(r.leadId).toBeNull();
+
+    const naoAchou = { portal: 'x', call: async (m) => ({ result: m === 'crm.duplicate.findbycomm' ? [] : [] }) };
+    await expect(enviarPedidoAoBitrix({ client: naoAchou, catalogo, pedido, calculo: calcularPedido(catalogo, pedido), pedidoId: 'PED-5', resumoTexto: '', portalHost: 'x' })).rejects.toThrow(/não encontrado/);
+  });
+});
+
 describe('envio ao Bitrix', () => {
   it('dois blocos do mesmo estado (fora da instalação) viram um card só', async () => {
     const calls = [];
@@ -163,10 +216,14 @@ describe('envio ao Bitrix', () => {
     expect(r.cards[0].titulo).toBe('Neo Vox + Portabilidade');
     expect(r.cards[2].titulo).toMatch(/^Portabilidade GO/);
     const deals = calls.filter(([m]) => m === 'crm.deal.add').map(([, p]) => p.fields);
-    expect(deals.every((d) => d.CATEGORY_ID === 22 && d.STAGE_ID === 'C22:UC_5CXUV0' && d.ASSIGNED_BY_ID === 762 && d.ORIGIN_ID === 'PED-1')).toBe(true);
+    expect(deals.every((d) => d.CATEGORY_ID === 16 && d.STAGE_ID === 'C16:UC_7SA6T7' && d.ASSIGNED_BY_ID === 762 && d.ORIGIN_ID === 'PED-1')).toBe(true); // Administrativo → Validação de Dados
+    expect(deals.map((d) => d.TYPE_ID)).toEqual(['SALE', 'UC_JUD1FN', 'SALE']); // Neo Vox, Neo Phone, portabilidade (Neo Vox)
+    expect(deals[0][F.vox.tarifaLocalFixo]).toBe('Ilimitado');
+    expect(deals[1][F.phone.descontoTotalPct]).toBe('50%');
+    expect(deals[1][F.phone.descontoTotalRs]).toMatch(/67,91/); // 2×39,94 + 55,94 = 135,82 cheio; metade de desconto
     expect(deals[0][F.pj.cnpj]).toBe('11.222.333/0001-81');
-    expect(deals[0][F.pj.socio.celular]).toBe('5561999990000');
-    expect(deals[0][F.port.numeroUnico]).toBe('5561933330000'); // DF (instalação) no card Neo Vox
+    expect(deals[0][F.pj.socio.celular]).toBe('55 (61) 9 9999-0000');
+    expect(deals[0][F.port.numeroUnico]).toBe('55 (61) 9 3333-0000'); // DF (instalação) no card Neo Vox
     expect(deals[0][F.port.uf]).toBe('DF');
     expect(deals[2][F.port.uf]).toBe('GO');
     expect(deals[1][F.port.uf]).toBeUndefined(); // card Neo Phone sem portabilidade

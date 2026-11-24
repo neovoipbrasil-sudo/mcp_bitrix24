@@ -53,8 +53,15 @@ export function validarPedido(catalogo, pedido, { checarArquivosEnviados = true 
 
   // Seção 2/3 — cliente
   const c = p.cliente || {};
+  const aditivo = p.tipoPedido === 'aditivo';
+  if (!['novo', 'aditivo'].includes(p.tipoPedido || 'novo')) erros.push({ campo: 'tipoPedido', mensagem: 'Informe se é contrato novo ou aditivo.' });
   if (!['PF', 'PJ'].includes(c.tipo)) erros.push({ campo: 'cliente.tipo', mensagem: 'Informe se o cliente é Pessoa Física ou Jurídica.' });
-  if (c.tipo === 'PF') {
+  if (aditivo) {
+    // Aditivo: cliente já cadastrado no Bitrix24; pede só identificação e o responsável pelo aditivo.
+    if (c.tipo === 'PF') regras.push(['cliente.pf.nome', 'text', c.pf?.nome], ['cliente.pf.cpf', 'cpf', c.pf?.cpf]);
+    if (c.tipo === 'PJ') regras.push(['cliente.pj.razaoSocial', 'text', c.pj?.razaoSocial], ['cliente.pj.cnpj', 'cnpj', c.pj?.cnpj]);
+    if (c.tipo) regras.push(...pessoa('cliente.responsavelAditivo', c.responsavelAditivo));
+  } else if (c.tipo === 'PF') {
     const f = c.pf || {};
     regras.push(
       ['cliente.pf.nome', 'text', f.nome], ['cliente.pf.cpf', 'cpf', f.cpf], ['cliente.pf.nascimento', 'birth', f.nascimento],
@@ -62,7 +69,7 @@ export function validarPedido(catalogo, pedido, { checarArquivosEnviados = true 
       ...endereco('cliente.pf.endereco', f.endereco),
     );
   }
-  if (c.tipo === 'PJ') {
+  if (!aditivo && c.tipo === 'PJ') {
     const j = c.pj || {};
     regras.push(
       ['cliente.pj.cnpj', 'cnpj', j.cnpj], ['cliente.pj.razaoSocial', 'text', j.razaoSocial], ['cliente.pj.nomeFantasia', 'text', j.nomeFantasia],
@@ -78,7 +85,7 @@ export function validarPedido(catalogo, pedido, { checarArquivosEnviados = true 
       [`cliente.pj.socios.${i}.celular`, 'phone', s.celular], [`cliente.pj.socios.${i}.email`, 'email', s.email],
     ));
   }
-  if (c.tipo) {
+  if (c.tipo && !aditivo) {
     const k = c.contatos || {};
     for (const papel of ['gestor', 'financeiro', 'tecnico']) regras.push(...pessoa(`cliente.contatos.${papel}`, k[papel]));
     regras.push(['cliente.contatos.testemunha.nome', 'text', k.testemunha?.nome], ['cliente.contatos.testemunha.email', 'email', k.testemunha?.email]);
@@ -98,18 +105,21 @@ export function validarPedido(catalogo, pedido, { checarArquivosEnviados = true 
       regras.push([`${pre}.cidade`, 'text', b.cidade], [`${pre}.uf`, 'uf', b.uf], [`${pre}.operadora`, 'text', b.operadora]);
       if (b.operadora === 'Outra') regras.push([`${pre}.operadoraOutra`, 'text', b.operadoraOutra]);
       if (b.modo === 'faixa') {
-        regras.push([`${pre}.faixa.inicio`, 'phone', b.faixa?.inicio], [`${pre}.faixa.fim`, 'phone', b.faixa?.fim]);
+        regras.push([`${pre}.faixa.inicio`, 'phonePort', b.faixa?.inicio], [`${pre}.faixa.fim`, 'phonePort', b.faixa?.fim]);
         const ini = onlyDigits(b.faixa?.inicio);
         const fim = onlyDigits(b.faixa?.fim);
-        if (ini.length === 13 && fim.length === 13 && ini.slice(0, 4) !== fim.slice(0, 4)) {
+        const completos = [12, 13].includes(ini.length) && [12, 13].includes(fim.length);
+        if (completos && ini.length !== fim.length) {
+          erros.push({ campo: `${pre}.faixa.fim`, mensagem: 'O primeiro e o último número precisam ter a mesma quantidade de dígitos.' });
+        } else if (completos && ini.slice(0, 4) !== fim.slice(0, 4)) {
           erros.push({ campo: `${pre}.faixa.fim`, mensagem: 'O primeiro e o último número precisam ter o mesmo DDD.' });
-        } else if (ini.length === 13 && fim.length === 13 && Number(fim) < Number(ini)) {
+        } else if (completos && Number(fim) < Number(ini)) {
           erros.push({ campo: `${pre}.faixa.fim`, mensagem: 'O último número precisa ser maior que o primeiro.' });
         }
       } else {
         const nums = (b.numeros || []).filter((x) => String(x ?? '').trim());
         if (!nums.length) erros.push({ campo: `${pre}.numeros`, mensagem: 'Informe ao menos um número.' });
-        nums.forEach((n, j) => regras.push([`${pre}.numeros.${j}`, 'phone', n]));
+        nums.forEach((n, j) => regras.push([`${pre}.numeros.${j}`, 'phonePort', n]));
       }
       const t = b.titular || {};
       if (!t.mesmoCliente) {
@@ -127,7 +137,7 @@ export function validarPedido(catalogo, pedido, { checarArquivosEnviados = true 
 
   // Seção 7 — conclusão
   const z = p.conclusao || {};
-  if (!catalogo.regras.vencimentos.includes(Number(z.vencimento))) erros.push({ campo: 'conclusao.vencimento', mensagem: 'Escolha o dia de vencimento.' });
+  if (!aditivo && !catalogo.regras.vencimentos.includes(Number(z.vencimento))) erros.push({ campo: 'conclusao.vencimento', mensagem: 'Escolha o dia de vencimento.' });
   if (!['remota', 'presencial'].includes(z.instalacao)) erros.push({ campo: 'conclusao.instalacao', mensagem: 'Escolha o tipo de instalação.' });
   regras.push(['conclusao.observacoes', 'text', z.observacoes], ...endereco('conclusao.endereco', z.endereco));
 

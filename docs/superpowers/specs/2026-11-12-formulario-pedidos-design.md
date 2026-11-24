@@ -235,3 +235,12 @@ O bot não existe como serviço no Easypanel, então o formulário roda como ser
 - Solução: Resend. SMTP_HOST=smtp.resend.com, SMTP_PORT=465, SMTP_USER=resend, SMTP_PASS=API key (Sending access, só neovoip.com.br). Remetente segue pedidos@neovoip.com.br. FUNCIONANDO.
 - DNS: `send.neovoip.com.br` já era CNAME de outro serviço (rmta.net), por isso o Resend precisa de Return-Path próprio (ver painel do Resend). DKIM em `resend._domainkey`.
 - Rastreio de entrega: aba Logs do Resend.
+
+## Atualizações de 2026-11-24
+- **Destino dos cards:** todos (vendedores e revendas) no pipeline **Administrativo (16)**: contrato novo → "Validação de Dados" (`C16:UC_7SA6T7`); aditivo → "Aditivo Recebido" (`C16:UC_ECHZPU`).
+- **Tipo do negócio** (campo padrão `TYPE_ID`): Neo Vox `SALE`, Neo Phone `UC_JUD1FN`, Aditivo Neo Vox `UC_TF3A56`, Aditivo Neo Phone `UC_K46OU9`. Card de portabilidade usa o tipo Neo Vox (ou Aditivo Neo Vox).
+- **Aditivo:** pergunta "Contrato novo ou Aditivo?" no início da etapa Cliente. No aditivo pede só PF/PJ, CPF/CNPJ, nome/razão social e o responsável pelo aditivo (vai nos campos de gestor do contrato); o cliente precisa existir no Bitrix (conferido no navegador e no servidor). Não cria empresa, não converte lead, não pede vencimento nem documentos.
+- **Telefones nos campos do card:** `55 (61) 9 9999-9999` (fixo de 8 dígitos: `55 (61) 3333-4444`). Contato/empresa e busca de duplicados continuam só com dígitos.
+- **Portabilidade:** números com 8 ou 9 dígitos depois do DDD (nunca mais de 9).
+- **Tarifas:** Pós/Pré com 3 casas decimais (antes saíam arredondadas para 2); Ilimitado grava "Ilimitado".
+- **Neo Phone:** Desconto Total (%), Desconto Total (R$) = desconto mensal das licenças, Valor total dos benefícios = desconto mensal × meses de fidelidade.

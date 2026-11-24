@@ -168,6 +168,19 @@ export function createPedidosRouter({ catalogStore, pedidosStore, bitrixClient, 
     const { erros, calculo } = validarPedido(catalogStore.get(), pedido);
     if (erros.length) return res.status(422).json({ erro: 'Há campos com problema.', erros });
 
+    // Aditivo só para cliente já cadastrado no Bitrix24. Se o Bitrix estiver fora, o pedido segue e fica salvo.
+    if (pedido.tipoPedido === 'aditivo' && !envios.has(envioId)) {
+      const c = pedido.cliente;
+      try {
+        const achado = await buscarCliente(bitrixClient, { tipo: c.tipo, doc: c.tipo === 'PF' ? c.pf.cpf : c.pj.cnpj });
+        if (!achado.contactId && !achado.companyId) {
+          return res.status(422).json({ erro: 'Cliente do aditivo não encontrado no Bitrix24.', erros: [{ campo: 'clienteBitrix', mensagem: 'Cliente não encontrado no Bitrix24 com esse documento. Confira o CPF/CNPJ ou faça como contrato novo.' }] });
+        }
+      } catch (err) {
+        console.error('formulario: busca do cliente do aditivo falhou', err.message);
+      }
+    }
+
     if (!envios.has(envioId)) {
       envios.set(envioId, (async () => {
         const id = novoPedidoId(now);

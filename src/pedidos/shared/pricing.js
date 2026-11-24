@@ -38,7 +38,7 @@ export function contarNumerosPortabilidade(bloco) {
   if (bloco.modo === 'faixa') {
     const ini = onlyDigits(bloco.faixa?.inicio);
     const fim = onlyDigits(bloco.faixa?.fim);
-    if (ini.length !== 13 || fim.length !== 13) return 0;
+    if (![12, 13].includes(ini.length) || ini.length !== fim.length) return 0;
     const diff = Number(fim) - Number(ini);
     return diff >= 0 ? diff + 1 : 0;
   }
